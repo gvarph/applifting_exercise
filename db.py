@@ -4,9 +4,7 @@ import consts
 
 
 engine = create_engine(
-    engine=create_engine(
-        f"postgresql://{consts.postgres_user}:{consts.postgres_password}@{consts.postgres_host}:{consts.postgres_port}/{consts.postgres_db}"
-    ),
+    consts.DATABASE_URL,
 )
 
 
