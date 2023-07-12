@@ -1,0 +1,3 @@
+/* SELECT *
+ FROM jwt_tokens */
+DELETE FROM jwt_tokens
