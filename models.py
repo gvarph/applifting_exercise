@@ -51,4 +51,11 @@ class Offer(Base):
     product_id = Column(UUID, ForeignKey("products.id"))
 
 
+class JwtToken(Base):
+    __tablename__ = "jwt_tokens"
+
+    token = Column(String, primary_key=True)
+    expiration = Column(Integer)
+
+
 Base.metadata.create_all(db.engine)
