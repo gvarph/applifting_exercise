@@ -41,6 +41,13 @@ class ProductModel(BaseModel):
     description: str
     id: Optional[uuid.UUID] = None
 
+    def toProduct(self):
+        return Product(
+            id=self.id if self.id else uuid.uuid4(),
+            name=self.name,
+            description=self.description,
+        )
+
 
 @dataclass
 class Offer(Base):
