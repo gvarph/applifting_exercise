@@ -9,7 +9,7 @@ from jwt.exceptions import InvalidTokenError
 
 from models import JwtToken, Product
 from db import Session
-from consts import token_secret, base_url
+from consts import TOKEN_SECRET, API_URL
 
 
 # TODO: make this a custom exception and move it to a separate file
@@ -56,11 +56,11 @@ async def get_token() -> JwtToken:
         print("difference:", db_token.expiration - time.time())
 
     async with httpx.AsyncClient() as client:
-        headers = {"bearer": token_secret}
+        headers = {"bearer": TOKEN_SECRET}
 
         try:
             response = await client.post(
-                url=base_url + "/auth",
+                url=API_URL + "/auth",
                 headers=headers,
             )
         except httpx.HTTPError as e:
@@ -112,7 +112,7 @@ async def register_product(product: Product):
         headers = {"bearer": jwt_token.token}
 
         response = await client.post(
-            url=base_url + "/products/register",
+            url=API_URL + "/products/register",
             json=product.to_dict(),
             headers=headers,
         )
@@ -127,7 +127,7 @@ async def get_offers(product_id: str):
         headers = {"bearer": jwt_token.token}
 
         response = await client.get(
-            url=base_url + "/products/" + product_id + "/offers",
+            url=API_URL + "/products/" + product_id + "/offers",
             headers=headers,
         )
 
