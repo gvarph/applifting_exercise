@@ -29,12 +29,12 @@ async def read_products():
 
 
 @app.post("/products/", response_model=ProductModel, status_code=201)
-def create_product(product: ProductModel):
-    if not product.name or not product.description:
+def create_product(data: ProductModel):
+    if not data.name or not data.description:
         raise HTTPException(status_code=400, detail="Invalid product")
     try:
         with Session() as session:
-            db_product = Product(**product.dict())
+            db_product = data.toProduct()
             session.add(db_product)
             session.commit()
             session.refresh(db_product)
@@ -62,7 +62,7 @@ async def update_product(product_id: uuid.UUID, new_product: ProductModel):
 
 
 @app.delete("/products/{product_id}")
-async def delete_product(product_id: int):
+async def delete_product(product_id: uuid.UUID):
     try:
         with Session() as session:
             delete_stmt = (
