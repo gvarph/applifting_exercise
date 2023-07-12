@@ -38,6 +38,7 @@ def create_product(data: ProductModel):
             session.add(db_product)
             session.commit()
             session.refresh(db_product)
+            db
         return db_product
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
