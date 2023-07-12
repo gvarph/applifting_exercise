@@ -28,6 +28,13 @@ class Product(Base):
             f"<Product(id={self.id}, name={self.name}, description={self.description})>"
         )
 
+    def to_dict(self):
+        return {
+            "id": str(self.id),
+            "name": self.name,
+            "description": self.description,
+        }
+
 
 class ProductModel(BaseModel):
     name: str
