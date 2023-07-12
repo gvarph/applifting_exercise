@@ -42,6 +42,7 @@ class ProductModel(BaseModel):
     id: Optional[uuid.UUID] = None
 
 
+@dataclass
 class Offer(Base):
     __tablename__ = "offers"
 
@@ -51,11 +52,15 @@ class Offer(Base):
     product_id = Column(UUID, ForeignKey("products.id"))
 
 
+@dataclass
 class JwtToken(Base):
     __tablename__ = "jwt_tokens"
 
     token = Column(String, primary_key=True)
     expiration = Column(Integer)
+
+    def __repr__(self):
+        return f"<JwtToken(token={self.token}, expiration={self.expiration})>"
 
 
 Base.metadata.create_all(db.engine)
