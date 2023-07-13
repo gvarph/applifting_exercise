@@ -38,7 +38,9 @@ def create_product(data: ProductModel):
             session.add(db_product)
             session.commit()
             session.refresh(db_product)
-            db
+
+        # TODO: register product in offers service?
+
         return db_product
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -55,6 +57,8 @@ async def update_product(product_id: uuid.UUID, new_product: ProductModel):
                 }
             )
             session.commit()
+
+            # TODO: update product in offers service?
             db_product = session.query(Product).filter(Product.id == product_id).first()
         print(db_product)
         return db_product
@@ -62,7 +66,7 @@ async def update_product(product_id: uuid.UUID, new_product: ProductModel):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.delete("/products/{product_id}")
+@app.delete("/products/{product_id}", status_code=204)
 async def delete_product(product_id: uuid.UUID):
     try:
         with Session() as session:
@@ -73,6 +77,8 @@ async def delete_product(product_id: uuid.UUID):
             if not delete_stmt:
                 raise HTTPException(status_code=404, detail="Product not found")
             session.commit()
+            # TODO: delete product in offers service?
         return status.HTTP_204_NO_CONTENT
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

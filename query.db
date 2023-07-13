@@ -1,3 +1,4 @@
 /* SELECT *
  FROM jwt_tokens */
-DELETE FROM jwt_tokens
+SELECT *
+from jwt_tokens
