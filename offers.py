@@ -7,9 +7,10 @@ from psycopg2 import DatabaseError
 from sqlalchemy.exc import SQLAlchemyError
 from jwt.exceptions import InvalidTokenError
 
-from models import JwtToken, Product
+from models import JwtToken, Offer, Product
 from db import Session
 from consts import TOKEN_SECRET, API_URL
+from util import debug_print
 
 
 # TODO: make this a custom exception and move it to a separate file
@@ -106,7 +107,7 @@ async def get_token() -> JwtToken:
 
 
 async def register_product(product: Product):
-    jwt_token = await get_token()
+    jwt_token: JwtToken = await get_token()
 
     async with httpx.AsyncClient() as client:
         headers = {"bearer": jwt_token.token}
@@ -131,23 +132,55 @@ async def get_offers(product_id: str):
             headers=headers,
         )
 
-        return response.json()
+    body = response.json()
+
+    new_offers = []
+    for offer in body:
+        new_offer = Offer(
+            price=offer.get("price"),
+            id=offer.get("id"),
+            items_in_stock=offer.get("items_in_stock"),
+            product_id=product_id,
+        )
+        new_offers.append(new_offer)
+
+    # add offers to db
+    with Session() as session:
+        session.add_all(new_offers)
+        session.commit()
+
+    return response.json()
 
 
 if __name__ == "__main__":
-    import uuid
+    import asyncio
+
+    print(asyncio.run(get_token()))
+
+    """  import uuid
     import asyncio
 
     for i in range(10):
-        product = Product(
-            name="Test product" + str(i),
-            description="Test description" + str(i),
-            id=uuid.uuid4(),
-        )
-        # dump all product info
-        asyncio.run(register_product(product))
-        print("Registered product", product.id)
-        offers = asyncio.run(get_offers(str(product.id)))
-        print("Offers for product", product.id, ":", offers)
+        with Session() as session:
+            debug_print("Creating product")
+            product = Product(
+                name="Test product" + str(i),
+                description="Test description" + str(i),
+                id=uuid.uuid4(),
+            )
+            debug_print("Created product", product.id)
+            # persist product to db
+            session.add(product)
+            debug_print("Added product to session")
+            session.commit()
+            debug_print("Committed session")
 
-        time.sleep(1)
+            # keep a reference to the product that's bound to a session
+            product_bound = session.query(Product).get(product.id)
+            debug_print("Got product from session")
+
+        # dump all product info
+        asyncio.run(register_product(product_bound))
+        debug_print("Registered product", product.id)
+        offers = asyncio.run(get_offers(str(product.id)))
+        print("Offers for product", product.id, ":", offers) """
