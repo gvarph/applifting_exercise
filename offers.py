@@ -1,5 +1,4 @@
 import time
-from typing import Optional
 import httpx
 import asyncio
 import jwt
@@ -96,7 +95,6 @@ async def _store_new_token_in_db(token) -> JwtToken | None:
             session.query(JwtToken).delete()
             # add new token
             session.add(token)
-            session.commit()
             return session.query(JwtToken).first()
     except SQLAlchemyError as e:
         logger.error(f"Failed to commit token to database: {str(e)}")
@@ -209,7 +207,6 @@ def _store_offers_in_db(offers):
     try:
         with Session() as session:
             session.add_all(offers)
-            session.commit()
     except SQLAlchemyError as e:
         logger.error(f"Failed to commit offers to database: {str(e)}")
         raise DatabaseError(f"Failed to commit offers to database: {str(e)}")
