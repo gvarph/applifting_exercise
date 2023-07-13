@@ -1,10 +1,10 @@
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker
-import consts
+import env
 
 
 engine = create_engine(
-    consts.DATABASE_URL,
+    env.DATABASE_URL,
 )
 
 
