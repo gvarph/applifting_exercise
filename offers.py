@@ -222,9 +222,3 @@ async def get_offers(product_id: str):
     _store_offers_in_db(new_offers)
 
     return response.json()
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    logger.info(asyncio.run(_get_valid_token()))
