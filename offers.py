@@ -32,30 +32,29 @@ class InvalidJwtTokenError(Exception):
         super().__init__(self.message)
 
 
-async def get_token() -> JwtToken:
-    # Get token from db
-    db_token = None
+async def _fetch_token_from_db():
     try:
         with Session() as session:
-            db_token: JwtToken | None = session.query(JwtToken).first()
+            return session.query(JwtToken).first()
     except SQLAlchemyError as e:
         logger.error(f"Database query failed: {str(e)}")
         raise DatabaseError(f"Database query failed: {str(e)}")
 
-    if (
-        db_token is not None
-        and db_token.expiration is not None
-        and db_token.expiration > time.time()
-    ):
-        return db_token
 
-    logger.info("There is no token or it's invalid, requesting new token")
+def _is_token_valid(token):
+    return (
+        token is not None
+        and token.expiration is not None
+        and token.expiration > time.time()
+    )
 
+
+async def _fetch_new_token_from_api() -> Response:
     async with httpx.AsyncClient() as client:
         headers = {"bearer": TOKEN_SECRET}
 
         try:
-            response = await client.post(
+            return await client.post(
                 url=API_URL + "/auth",
                 headers=headers,
             )
@@ -63,49 +62,67 @@ async def get_token() -> JwtToken:
             logger.error(f"HTTP request failed: {str(e)}")
             raise httpx.HTTPError(f"HTTP request failed: {str(e)}")
 
-        if response.status_code != 201:
-            logger.error("Response status code: %s", response.status_code)
-            logger.error("Response text: %s", response.text)
-            raise AuthenticationFailedError("Could not authenticate")
 
-        body = response.json()
-        access_token = body.get("access_token")
-
-        if not access_token:
-            raise AuthenticationFailedError("Could not authenticate")
-
-        try:
-            # decode token without verifying signature
-            decoded_token = jwt.decode(
-                access_token, algorithms=["HS256"], options={"verify_signature": False}
-            )
-            expiration = decoded_token.get("expires")
-        except InvalidTokenError as e:
-            logger.error(f"JWT Token decoding failed: {str(e)}")
-            raise InvalidJwtTokenError(f"JWT Token decoding failed: {str(e)}")
-
-        new_token = JwtToken(
-            token=access_token,
-            expiration=expiration,
+def _decode_token(token):
+    try:
+        # decode token without verifying signature
+        return jwt.decode(
+            token, algorithms=["HS256"], options={"verify_signature": False}
         )
+    except InvalidTokenError as e:
+        logger.error(f"JWT Token decoding failed: {str(e)}")
+        raise InvalidJwtTokenError(f"JWT Token decoding failed: {str(e)}")
 
-        try:
-            with Session() as session:
-                # remove old token
-                session.query(JwtToken).delete()
-                # add new token
-                session.add(new_token)
-                session.commit()
-                new_token = session.query(JwtToken).first()
-        except SQLAlchemyError as e:
-            logger.error(f"Failed to commit token to database: {str(e)}")
-            raise DatabaseError(f"Failed to commit token to database: {str(e)}")
 
-        return new_token
+async def _store_new_token_in_db(token) -> JwtToken | None:
+    try:
+        with Session() as session:
+            # remove old token
+            session.query(JwtToken).delete()
+            # add new token
+            session.add(token)
+            session.commit()
+            return session.query(JwtToken).first()
+    except SQLAlchemyError as e:
+        logger.error(f"Failed to commit token to database: {str(e)}")
+        raise DatabaseError(f"Failed to commit token to database: {str(e)}")
+
+
+async def _get_token() -> JwtToken:
+    # Get token from db
+    db_token = await _fetch_token_from_db()
+
+    if _is_token_valid(db_token):
+        return db_token
+
+    logger.info("There is no token or it's invalid, requesting new token")
+
+    response = await _fetch_new_token_from_api()
+
+    if response.status_code != 201:
+        logger.error("Response status code: %s", response.status_code)
+        logger.error("Response text: %s", response.text)
+        raise AuthenticationFailedError("Could not authenticate")
+
+    body = response.json()
+    access_token = body.get("access_token")
+
+    if not access_token:
+        raise AuthenticationFailedError("Could not authenticate")
+
+    decoded_token = _decode_token(access_token)
+    expiration = decoded_token.get("expires")
+
+    new_token = JwtToken(
+        token=access_token,
+        expiration=expiration,
+    )
+
+    return await _store_new_token_in_db(new_token)
 
 
 async def register_product(product: Product):
-    jwt_token: JwtToken = await get_token()
+    jwt_token: JwtToken = await _get_token()
 
     async with httpx.AsyncClient() as client:
         headers = {"bearer": jwt_token.token}
@@ -128,17 +145,21 @@ async def register_product(product: Product):
             return None
 
 
-async def get_offers(product_id: str):
-    jwt_token = await get_token()
-
+async def _fetch_product_offers_from_api(jwt_token, product_id):
     async with httpx.AsyncClient() as client:
         headers = {"bearer": jwt_token.token}
 
-        response = await client.get(
-            url=API_URL + "/products/" + product_id + "/offers",
-            headers=headers,
-        )
+        try:
+            return await client.get(
+                url=API_URL + "/products/" + product_id + "/offers",
+                headers=headers,
+            )
+        except httpx.HTTPError as e:
+            logger.error(f"HTTP request failed: {str(e)}")
+            raise httpx.HTTPError(f"HTTP request failed: {str(e)}")
 
+
+def _process_response_and_create_offers(response, product_id):
     body = response.json()
 
     new_offers = []
@@ -151,10 +172,24 @@ async def get_offers(product_id: str):
         )
         new_offers.append(new_offer)
 
-    # add offers to db
-    with Session() as session:
-        session.add_all(new_offers)
-        session.commit()
+    return new_offers
+
+
+def _store_offers_in_db(offers):
+    try:
+        with Session() as session:
+            session.add_all(offers)
+            session.commit()
+    except SQLAlchemyError as e:
+        logger.error(f"Failed to commit offers to database: {str(e)}")
+        raise DatabaseError(f"Failed to commit offers to database: {str(e)}")
+
+
+async def get_offers(product_id: str):
+    jwt_token = await _get_token()
+    response = await _fetch_product_offers_from_api(jwt_token, product_id)
+    new_offers = _process_response_and_create_offers(response, product_id)
+    _store_offers_in_db(new_offers)
 
     return response.json()
 
@@ -162,4 +197,4 @@ async def get_offers(product_id: str):
 if __name__ == "__main__":
     import asyncio
 
-    logger.info(asyncio.run(get_token()))
+    logger.info(asyncio.run(_get_token()))
