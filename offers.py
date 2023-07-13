@@ -1,6 +1,6 @@
 import time
+from typing import Optional
 import httpx
-import asyncio
 import jwt
 from psycopg2 import DatabaseError
 from sqlalchemy.exc import SQLAlchemyError
@@ -8,7 +8,7 @@ from jwt.exceptions import InvalidTokenError
 
 from models import JwtToken, Offer, Product
 from db import Session
-from consts import TOKEN_SECRET, API_URL
+from env import TOKEN_SECRET, API_URL
 from util import get_logger
 
 logger = get_logger(__name__)
@@ -31,7 +31,31 @@ class InvalidJwtTokenError(Exception):
         super().__init__(self.message)
 
 
-async def _fetch_token_from_db() -> JwtToken | None:
+class ApiRequestError(Exception):
+    """Exception raised for errors in the API request for token"""
+
+    def __init__(self, message="API request for token failed"):
+        self.message = message
+        super().__init__(self.message)
+
+
+class OffersFetchError(Exception):
+    """Exception raised for errors in the API request for fetching offers"""
+
+    def __init__(self, message="API request for fetching offers failed"):
+        self.message = message
+        super().__init__(self.message)
+
+
+class ProductRegistrationError(Exception):
+    """Exception raised for errors in the product registration process"""
+
+    def __init__(self, message="Product registration failed"):
+        self.message = message
+        super().__init__(self.message)
+
+
+async def _fetch_token_from_db() -> Optional[JwtToken]:
     """
     Fetch the first JWT token from the database. If a SQLAlchemyError occurs, log the error and raise a DatabaseError.
     """
@@ -40,12 +64,13 @@ async def _fetch_token_from_db() -> JwtToken | None:
             return session.query(JwtToken).first()
     except SQLAlchemyError as e:
         logger.error(f"Database query failed: {str(e)}")
-        raise DatabaseError(f"Database query failed: {str(e)}")
+        raise DatabaseError(f"Database query failed: {str(e)}") from e
 
 
-def _is_token_valid(token) -> bool:
+def _is_token_valid(token: JwtToken) -> bool:
     """
     Check if the token is valid. A valid token is defined as not None, has a defined expiration, and the expiration time is in the future.
+    This expects the token.expiration to be a UNIX timestamp.
     """
     return (
         token is not None
@@ -68,15 +93,16 @@ async def _fetch_new_token_from_api() -> httpx.Response:
             )
         except httpx.HTTPError as e:
             logger.error(f"HTTP request failed: {str(e)}")
-            raise httpx.HTTPError(f"HTTP request failed: {str(e)}")
+            raise ApiRequestError(f"HTTP request failed: {str(e)}")
 
 
-def _decode_token(token):
+def _decode_token(token: str):
     """
     Decode the JWT token without verifying the signature.
     """
     try:
         # decode token without verifying signature
+        # TODO: get it to work with verify_signature=True
         return jwt.decode(
             token, algorithms=["HS256"], options={"verify_signature": False}
         )
@@ -85,7 +111,7 @@ def _decode_token(token):
         raise InvalidJwtTokenError(f"JWT Token decoding failed: {str(e)}")
 
 
-async def _store_new_token_in_db(token) -> JwtToken | None:
+async def _store_new_token_in_db(token) -> Optional[JwtToken]:
     """
     Store a new JWT token in the database. If a SQLAlchemyError occurs, log the error and raise a DatabaseError.
     """
@@ -95,6 +121,8 @@ async def _store_new_token_in_db(token) -> JwtToken | None:
             session.query(JwtToken).delete()
             # add new token
             session.add(token)
+            # commit changes
+            session.commit()
             return session.query(JwtToken).first()
     except SQLAlchemyError as e:
         logger.error(f"Failed to commit token to database: {str(e)}")
@@ -115,7 +143,8 @@ async def _get_valid_token() -> JwtToken:
 
     response = await _fetch_new_token_from_api()
 
-    if response.status_code != 201:
+    # if response.status_code != 201:
+    if response.status_code != httpx.codes.CREATED:
         logger.error("Response status code: %s", response.status_code)
         logger.error("Response text: %s", response.text)
         raise AuthenticationFailedError("Could not authenticate")
@@ -137,7 +166,7 @@ async def _get_valid_token() -> JwtToken:
     return await _store_new_token_in_db(new_token)
 
 
-async def register_product(product: Product):
+async def register_product(product: Product) -> None:
     """
     Register a product using the JWT token for authorization. If an error occurs during the HTTP request, log the error and return None.
     """
@@ -154,17 +183,30 @@ async def register_product(product: Product):
             )
         except httpx.HTTPError as http_err:
             logger.error(f"HTTP error occurred: {http_err}")
-            return None
+            raise ProductRegistrationError(
+                f"HTTP error occurred during product registration: {http_err}"
+            )
         except Exception as err:
             logger.error(f"An error occurred: {err}")
-            return None
+            raise ProductRegistrationError(
+                f"An unexpected error occurred during product registration: {err}"
+            )
 
-        if response.status_code != 200:
+        # if response.status_code != 200:
+        if response.status_code != httpx.codes.OK:
             logger.error(f"Unsuccessful request, status code: {response.status_code}")
-            return None
+            raise ProductRegistrationError(
+                f"Unsuccessful product registration, status code: {response.status_code}"
+            )
+
+        logger.info(
+            f"Product registration successful, status code: {response.status_code}"
+        )
 
 
-async def _fetch_product_offers_from_api(jwt_token, product_id) -> httpx.Response:
+async def _fetch_product_offers_from_api(
+    jwt_token: JwtToken, product_id: str
+) -> httpx.Response:
     """
     Fetch offers for a specific product from the API.
     """
@@ -178,10 +220,12 @@ async def _fetch_product_offers_from_api(jwt_token, product_id) -> httpx.Respons
             )
         except httpx.HTTPError as e:
             logger.error(f"HTTP request failed: {str(e)}")
-            raise httpx.HTTPError(f"HTTP request failed: {str(e)}")
+            raise OffersFetchError(f"HTTP request failed: {str(e)}")
 
 
-def _process_response_and_create_offers(response, product_id):
+def _process_response_and_create_offers(
+    response: httpx.Response, product_id: str
+) -> list[Offer]:
     """
     Process the response from the API and create Offer objects.
     """
@@ -200,19 +244,20 @@ def _process_response_and_create_offers(response, product_id):
     return new_offers
 
 
-def _store_offers_in_db(offers):
+def _store_offers_in_db(offers) -> None:
     """
     Store offers in the database. If a SQLAlchemyError occurs, log the error and raise a DatabaseError.
     """
     try:
         with Session() as session:
             session.add_all(offers)
+            session.commit()
     except SQLAlchemyError as e:
         logger.error(f"Failed to commit offers to database: {str(e)}")
         raise DatabaseError(f"Failed to commit offers to database: {str(e)}")
 
 
-async def get_offers(product_id: str):
+async def get_offers(product_id: str) -> list[Offer]:
     """
     Get offers for a specific product. This includes fetching the offers from the API, processing the response, and storing the offers in the database.
     """
@@ -221,4 +266,4 @@ async def get_offers(product_id: str):
     new_offers = _process_response_and_create_offers(response, product_id)
     _store_offers_in_db(new_offers)
 
-    return response.json()
+    return new_offers
