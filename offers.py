@@ -10,7 +10,9 @@ from jwt.exceptions import InvalidTokenError
 from models import JwtToken, Offer, Product
 from db import Session
 from consts import TOKEN_SECRET, API_URL
-from util import debug_print
+from util import debug_print, get_logger
+
+logger = get_logger(__name__)
 
 
 # TODO: make this a custom exception and move it to a separate file
@@ -37,12 +39,9 @@ async def get_token() -> JwtToken:
         with Session() as session:
             db_token: JwtToken | None = session.query(JwtToken).first()
     except SQLAlchemyError as e:
+        logger.error(f"Database query failed: {str(e)}")
         raise DatabaseError(f"Database query failed: {str(e)}")
 
-    # Check if token is valid.
-    # This may cause issues if the token expires between the check and the request arriving at the server.
-    # One way to fix this is checking if the token expires in the next x milliseconds,
-    # and if so, wait for the token to expire and then request a new one.
     if (
         db_token is not None
         and db_token.expiration is not None
@@ -50,11 +49,7 @@ async def get_token() -> JwtToken:
     ):
         return db_token
 
-    print("Token is invalid, requesting new token")
-    if db_token is not None:
-        print("current time:", time.time())
-        print("token expiration:", db_token.expiration)
-        print("difference:", db_token.expiration - time.time())
+    logger.info("There is no token or it's invalid, requesting new token")
 
     async with httpx.AsyncClient() as client:
         headers = {"bearer": TOKEN_SECRET}
@@ -65,11 +60,12 @@ async def get_token() -> JwtToken:
                 headers=headers,
             )
         except httpx.HTTPError as e:
+            logger.error(f"HTTP request failed: {str(e)}")
             raise httpx.HTTPError(f"HTTP request failed: {str(e)}")
 
         if response.status_code != 201:
-            print(response.status_code)
-            print(response.text)
+            logger.error("Response status code: %s", response.status_code)
+            logger.error("Response text: %s", response.text)
             raise AuthenticationFailedError("Could not authenticate")
 
         body = response.json()
@@ -85,6 +81,7 @@ async def get_token() -> JwtToken:
             )
             expiration = decoded_token.get("expires")
         except InvalidTokenError as e:
+            logger.error(f"JWT Token decoding failed: {str(e)}")
             raise InvalidJwtTokenError(f"JWT Token decoding failed: {str(e)}")
 
         new_token = JwtToken(
@@ -101,6 +98,7 @@ async def get_token() -> JwtToken:
                 session.commit()
                 new_token = session.query(JwtToken).first()
         except SQLAlchemyError as e:
+            logger.error(f"Failed to commit token to database: {str(e)}")
             raise DatabaseError(f"Failed to commit token to database: {str(e)}")
 
         return new_token
@@ -112,13 +110,22 @@ async def register_product(product: Product):
     async with httpx.AsyncClient() as client:
         headers = {"bearer": jwt_token.token}
 
-        response = await client.post(
-            url=API_URL + "/products/register",
-            json=product.to_dict(),
-            headers=headers,
-        )
+        try:
+            response = await client.post(
+                url=API_URL + "/products/register",
+                json=product.to_dict(),
+                headers=headers,
+            )
+        except httpx.HTTPError as http_err:
+            logger.error(f"HTTP error occurred: {http_err}")
+            return None
+        except Exception as err:
+            logger.error(f"An error occurred: {err}")
+            return None
 
-        return response.json()
+        if response.status_code != 200:
+            logger.error(f"Unsuccessful request, status code: {response.status_code}")
+            return None
 
 
 async def get_offers(product_id: str):
@@ -155,32 +162,4 @@ async def get_offers(product_id: str):
 if __name__ == "__main__":
     import asyncio
 
-    print(asyncio.run(get_token()))
-
-    """  import uuid
-    import asyncio
-
-    for i in range(10):
-        with Session() as session:
-            debug_print("Creating product")
-            product = Product(
-                name="Test product" + str(i),
-                description="Test description" + str(i),
-                id=uuid.uuid4(),
-            )
-            debug_print("Created product", product.id)
-            # persist product to db
-            session.add(product)
-            debug_print("Added product to session")
-            session.commit()
-            debug_print("Committed session")
-
-            # keep a reference to the product that's bound to a session
-            product_bound = session.query(Product).get(product.id)
-            debug_print("Got product from session")
-
-        # dump all product info
-        asyncio.run(register_product(product_bound))
-        debug_print("Registered product", product.id)
-        offers = asyncio.run(get_offers(str(product.id)))
-        print("Offers for product", product.id, ":", offers) """
+    logger.info(asyncio.run(get_token()))

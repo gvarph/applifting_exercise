@@ -1,8 +1,11 @@
-import inspect
-import os
+import logging
+
+from consts import LOG_LEVEL
 
 
-def debug_print(*to_print):
-    frame = inspect.currentframe().f_back
-    line_number = frame.f_lineno
-    print(f"\033[34m[DEBUG]\033[0m :{line_number} -", *to_print)
+def get_logger(name: str) -> logging.Logger:
+    """Returns a logger with the given name"""
+    logger = logging.getLogger(name)
+    logger.setLevel(LOG_LEVEL)
+
+    # create console handler with a higher log level
