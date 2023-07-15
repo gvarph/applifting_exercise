@@ -18,6 +18,8 @@ psycopg2 = "^2.9.6"
 pyjwt = "^2.7.0"
 pytest = "^7.4.0"
 pytest-asyncio = "^0.21.1"
+colorlog = "^6.7.0"
+pytest-watch = "^4.2.0"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -26,3 +28,9 @@ pytest-cov = "^4.1.0"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.coverage.run]
+branch = true
+
+[tool.pytest.ini_options]
+addopts = "--cov --cov-report=lcov:coverage/lcov.info --cov-report=term"

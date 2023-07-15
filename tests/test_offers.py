@@ -85,7 +85,7 @@ async def test_fetch_new_token_from_api_success():
         assert result == token
         mocked_post.assert_called_once_with(
             url=API_URL + "/auth",
-            headers={"Authorization": f"Bearer {TOKEN_SECRET}"},
+            headers={"Bearer": TOKEN_SECRET},
         )
 
 
@@ -99,4 +99,23 @@ async def test_fetch_new_token_from_api_failure():
         mocked_post.side_effect = httpx.HTTPError(error_message)
 
         with pytest.raises(ApiRequestError, match=error_message):
+            await _fetch_new_token_from_api()
+
+
+@pytest.mark.asyncio
+async def test_fetch_new_token_from_api_valid_response_but_no_token():
+    from src.offers import _fetch_new_token_from_api, ApiRequestError
+
+    expected_result = {"another_key": "another_value"}
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mocked_post:
+        mocked_post.return_value = AsyncMock(
+            json=AsyncMock(return_value=expected_result),
+            is_json=True,
+            status_code=200,
+        )
+
+        with pytest.raises(
+            ApiRequestError, match="Response does not contain access token"
+        ):
             await _fetch_new_token_from_api()
