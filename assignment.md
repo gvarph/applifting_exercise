@@ -32,9 +32,9 @@ Must haves:
 - [x] Use an access token from sign-up to access the offers microservice - this should be done only once, all your registered products are tied to this token
 - [x] To authenticate your requests, use a Bearer: <access-token> header
 - [x] Create CRUD for products
-- [ ] Once a new product is created, call the offers microservice to register it
+- [x] Once a new product is created, call the offers microservice to register it
 - [x] Your API does not need authentication
-- [ ] Create a background service which periodically calls the offers microservice to request offers for your products
+- [x] Create a background service which periodically calls the offers microservice to request offers for your products
 - [ ] Price in the offers microservice updates every minute, and offers sell out
 - [ ] Once an offer sells out, it is replaced by another one
 - [ ] Create a read-only API for product offers

@@ -1,4 +1,9 @@
-/* SELECT *
- FROM jwt_tokens */
-SELECT *
-from jwt_tokens
+/* SELECT table_name,
+ column_name,
+ data_type,
+ character_maximum_length,
+ is_nullable
+ FROM information_schema.columns
+ WHERE table_schema = 'public' */
+DELETE FROM offer_fetch;
+DELETE FROM products;
