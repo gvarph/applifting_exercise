@@ -36,14 +36,24 @@ class Product(Base):
         }
 
 
-class ProductModel(BaseModel):
+class CreateProductModel(BaseModel):
     name: str
     description: str
-    id: Optional[uuid.UUID] = None
 
     def toProduct(self):
         return Product(
-            id=self.id if self.id else uuid.uuid4(),
+            id=uuid.uuid4(),
+            name=self.name,
+            description=self.description,
+        )
+
+
+class ProductModel(CreateProductModel):
+    id: uuid.UUID
+
+    def toProduct(self):
+        return Product(
+            id=self.id,
             name=self.name,
             description=self.description,
         )
@@ -57,6 +67,21 @@ class Offer(Base):
     price = Column(Integer)
     items_in_stock = Column(Integer)
     product_id = Column(UUID, ForeignKey("products.id"))
+
+
+class OfferModel(BaseModel):
+    id: uuid.UUID
+    price: int
+    items_in_stock: int
+    product_id: uuid.UUID
+
+    def toOffer(self):
+        return Offer(
+            id=self.id,
+            price=self.price,
+            items_in_stock=self.items_in_stock,
+            product_id=self.product_id,
+        )
 
 
 @dataclass
