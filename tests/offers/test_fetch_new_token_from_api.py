@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 import httpx
 import src.env as env
 from src.offers import _fetch_new_token_from_api
@@ -14,9 +14,10 @@ async def test_success():
 
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mocked_post:
         mocked_post.return_value = AsyncMock(
-            json=AsyncMock(return_value=expected_result),
+            json=Mock(return_value=expected_result),
             is_json=True,
             status_code=httpx.codes.OK,
+            raise_for_status=Mock(),
         )
 
         result = await _fetch_new_token_from_api()
@@ -45,9 +46,10 @@ async def test_valid_response_but_no_token():
 
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mocked_post:
         mocked_post.return_value = AsyncMock(
-            json=AsyncMock(return_value=expected_result),
+            json=Mock(return_value=expected_result),
             is_json=True,
             status_code=httpx.codes.OK,
+            raise_for_status=Mock(),
         )
 
         with pytest.raises(

@@ -68,23 +68,30 @@ async def _fetch_new_token_from_api() -> str:
 
         url = env.API_URL + "/auth"
         try:
+            logger.debug(f"fetching new token from {url}")
             response = await client.post(
                 url=url,
                 headers=headers,
             )
-            logger.debug(f"Response: {response}")
-            await response.raise_for_status()
+            logger.debug(f"response status code: {response.status_code}")
+            logger.debug(f"response headers: {response.headers}")
+            logger.debug(f"response body: {response.text}")
+            response.raise_for_status()
         except httpx.HTTPError as e:
-            logger.error(f"HTTP request failed: {str(e)}")
+            logger.error(f"HTTP request failed: {e}")
             raise ApiRequestError(f"HTTP request failed: {str(e)}") from e
 
-    body = await response.json()
+    logger.debug(f"response: {response}")
 
-    access_token = body.get("access_token")
+    body = response.json()
 
-    if not access_token:
-        logger.debug(f"Response body: {body}")
+    if not "access_token" in body:
         raise ApiRequestError("Response does not contain access token")
+
+    access_token = body["access_token"]
+
+    logger.debug(f"new token: {access_token}")
+
     return access_token
 
 
@@ -100,11 +107,15 @@ def _decode_token(token: str):
     """
     try:
         # decode token without verifying signature - we don't have the secret as it's stored on the API
-        return jwt.decode(
+        decoded = jwt.decode(
             token, algorithms=["HS256"], options={"verify_signature": False}
         )
+        return decoded
 
     except InvalidTokenError as e:
+        logger.error(f"JWT Token decoding failed: {str(e)}")
+        raise InvalidJwtTokenError(f"JWT Token decoding failed: {str(e)}") from e
+    except Exception as e:
         logger.error(f"JWT Token decoding failed: {str(e)}")
         raise InvalidJwtTokenError(f"JWT Token decoding failed: {str(e)}") from e
 
@@ -148,9 +159,6 @@ async def _get_valid_token() -> JwtToken:
     if _is_token_valid(db_token):
         return db_token
 
-    else:
-        logger.debug(f"{db_token=} is not valid")
-
     logger.info("There is no token or it's invalid, requesting new token")
 
     access_token = await _fetch_new_token_from_api()
@@ -158,7 +166,7 @@ async def _get_valid_token() -> JwtToken:
     if not access_token:
         raise AuthenticationFailedError("Could not authenticate")
 
-    decoded_token = _decode_token(access_token).get("data")
+    decoded_token = _decode_token(access_token)
     logger.debug(f"Decoded token: {decoded_token}")
     expiration = decoded_token.get("expires")
 
@@ -205,12 +213,10 @@ async def register_product(product: Product) -> None:
             )
 
             raise ProductRegistrationError(
-                f"Unsuccessful product registration, status code: {response.status_code}"
+                f"Unsuccessful product offer registration, status code: {response.status_code}"
             )
 
-        logger.info(
-            f"Product registration successful, status code: {response.status_code}"
-        )
+        logger.info(f"Product {product.id} registered successfully")
 
 
 async def _fetch_product_offers_from_api(
