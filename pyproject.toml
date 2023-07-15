@@ -33,4 +33,4 @@ build-backend = "poetry.core.masonry.api"
 branch = true
 
 [tool.pytest.ini_options]
-addopts = "--cov --cov-report=lcov:coverage/lcov.info --cov-report=term"
+addopts = "--cov src --cov-report=lcov:coverage/lcov.info --cov-report=term "
