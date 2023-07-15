@@ -39,7 +39,7 @@ Must haves:
 - [ ] Once an offer sells out, it is replaced by another one
 - [ ] Create a read-only API for product offers
 - [x] Base URL for the offers microservice should be configurable via an environment variable
-- [ ] Write basic tests with pytest
+- [x] Write basic tests with pytest
 - [ ] Add a README with information on how to start & use your service
 - [x] Push your code into git repository and send us access (our preference is gitlab.com)
 
