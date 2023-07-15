@@ -55,25 +55,39 @@ def _is_token_valid(token: JwtToken) -> bool:
     )
 
 
-async def _fetch_new_token_from_api() -> httpx.Response:
+async def _fetch_new_token_from_api() -> str:
     """
     Fetch a new JWT token from the API.
 
     Returns:
-        httpx.Response: Response object from the API call.
+        str: The JWT token.
     """
 
     async with httpx.AsyncClient() as client:
-        headers = {"bearer": TOKEN_SECRET}
+        headers = {"Authorization": f"Bearer {TOKEN_SECRET}"}
 
         try:
-            return await client.post(
+            response = await client.post(
                 url=API_URL + "/auth",
                 headers=headers,
             )
+            response.raise_for_status()
         except httpx.HTTPError as e:
             logger.error(f"HTTP request failed: {str(e)}")
             raise ApiRequestError(f"HTTP request failed: {str(e)}") from e
+
+    if not response.is_json:
+        raise ApiRequestError("Response is not JSON")
+
+    body = await response.json()
+
+    access_token = body.get("access_token")
+
+    if not access_token:
+        logger.debug(f"Response body: {body}")
+        raise ApiRequestError("Response does not contain access token")
+
+    return access_token
 
 
 def _decode_token(token: str):
@@ -138,14 +152,7 @@ async def _get_valid_token() -> JwtToken:
 
     logger.info("There is no token or it's invalid, requesting new token")
 
-    response = await _fetch_new_token_from_api()
-
-    if not httpx.codes.is_success(response.status_code):
-        logger.error("Response status code: %s", response.status_code)
-        raise AuthenticationFailedError("Could not authenticate")
-
-    body = response.json()
-    access_token = body.get("access_token")
+    access_token = await _fetch_new_token_from_api()
 
     if not access_token:
         raise AuthenticationFailedError("Could not authenticate")
