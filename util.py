@@ -8,4 +8,6 @@ def get_logger(name: str) -> logging.Logger:
     logger = logging.getLogger(name)
     logger.setLevel(LOG_LEVEL)
 
+    return logger
+
     # create console handler with a higher log level
