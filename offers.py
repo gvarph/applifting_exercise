@@ -5,6 +5,7 @@ import jwt
 from psycopg2 import DatabaseError
 from sqlalchemy.exc import SQLAlchemyError
 from jwt.exceptions import InvalidTokenError
+
 from errors import (
     ApiRequestError,
     AuthenticationFailedError,
@@ -136,7 +137,7 @@ async def register_product(product: Product) -> None:
     """
     Register a product using the JWT token for authorization. If an error occurs during the HTTP request, log the error and return None.
     """
-    jwt_token: JwtToken = await _get_valid_token()
+    jwt_token = await _get_valid_token()
 
     async with httpx.AsyncClient() as client:
         headers = {"bearer": jwt_token.token}
@@ -158,9 +159,11 @@ async def register_product(product: Product) -> None:
                 f"An unexpected error occurred during product registration: {err}"
             ) from err
 
-        # if response.status_code != 200:
-        if response.status_code != httpx.codes.OK:
-            logger.error(f"Unsuccessful request, status code: {response.status_code}")
+        if response.status_code != httpx.codes.CREATED:
+            logger.error(
+                f"Unsuccessful request, status code: {response.status_code}\n Error: {response.text}"
+            )
+
             raise ProductRegistrationError(
                 f"Unsuccessful product registration, status code: {response.status_code}"
             )
@@ -233,3 +236,18 @@ async def get_offers(product_id: str) -> list[Offer]:
     _store_offers_in_db(new_offers)
 
     return new_offers
+
+
+if __name__ == "__main__":
+    import asyncio
+    import uuid
+
+    for i in range(0, 11):
+        new_product = Product(
+            name=f"Product {i}",
+            description="Description" * i,
+            id=uuid.uuid4(),
+        )
+
+        print(f"Registering product {new_product.name}")
+        asyncio.run(register_product(new_product))
