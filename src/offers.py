@@ -25,6 +25,9 @@ logger = get_logger(__name__)
 async def _fetch_token_from_db() -> Optional[JwtToken]:
     """
     Fetch the first JWT token from the database. If a SQLAlchemyError occurs, log the error and raise a DatabaseError.
+
+    Returns:
+        Optional[JwtToken]: Returns the first JWT token found in the database or None if no token is found.
     """
     try:
         with Session() as session:
@@ -37,7 +40,13 @@ async def _fetch_token_from_db() -> Optional[JwtToken]:
 def _is_token_valid(token: JwtToken) -> bool:
     """
     Check if the token is valid. A valid token is defined as not None, has a defined expiration, and the expiration time is in the future.
-    This expects the token.expiration to be a UNIX timestamp.
+    This expects the token.expiration to be a UNIX timestamp and assumes that the endpoint accounts for clock skew.
+
+    Args:
+        token (JwtToken): JWT token object to be checked.
+
+    Returns:
+        bool: True if the token is valid, False otherwise.
     """
     return (
         token is not None
@@ -49,7 +58,11 @@ def _is_token_valid(token: JwtToken) -> bool:
 async def _fetch_new_token_from_api() -> httpx.Response:
     """
     Fetch a new JWT token from the API.
+
+    Returns:
+        httpx.Response: Response object from the API call.
     """
+
     async with httpx.AsyncClient() as client:
         headers = {"bearer": TOKEN_SECRET}
 
@@ -66,13 +79,19 @@ async def _fetch_new_token_from_api() -> httpx.Response:
 def _decode_token(token: str):
     """
     Decode the JWT token without verifying the signature.
+
+    Args:
+        token (str): JWT token string to be decoded.
+
+    Returns:
+        dict: Decoded JWT token data.
     """
     try:
-        # decode token without verifying signature
-        # TODO: get it to work with verify_signature=True
+        # decode token without verifying signature - we don't have the secret as it's stored on the API
         return jwt.decode(
             token, algorithms=["HS256"], options={"verify_signature": False}
         )
+
     except InvalidTokenError as e:
         logger.error(f"JWT Token decoding failed: {str(e)}")
         raise InvalidJwtTokenError(f"JWT Token decoding failed: {str(e)}") from e
@@ -80,17 +99,25 @@ def _decode_token(token: str):
 
 async def _store_new_token_in_db(token) -> Optional[JwtToken]:
     """
-    Store a new JWT token in the database. If a SQLAlchemyError occurs, log the error and raise a DatabaseError.
+    Store a new JWT token in the database. If the token already exists, update its value.
+    If a SQLAlchemyError occurs, log the error and raise a DatabaseError.
+
+    Args:
+        token (JwtToken): JWT token object to be stored or updated in the database.
+
+    Returns:
+        Optional[JwtToken]: Returns the JWT token stored or updated in the database or None if the operation was not successful.
     """
     try:
         with Session() as session:
-            # remove old token
-            session.query(JwtToken).delete()
-            # add new token
-            session.add(token)
-            # commit changes
+            existing_token = session.query(JwtToken).first()
+            if existing_token:
+                existing_token.expiration = token.expiration
+                existing_token.token = token.token
+            else:
+                session.add(token)
             session.commit()
-            return session.query(JwtToken).first()
+        return token
     except SQLAlchemyError as e:
         logger.error(f"Failed to commit token to database: {str(e)}")
         raise DatabaseError(f"Failed to commit token to database: {str(e)}") from e
@@ -99,6 +126,9 @@ async def _store_new_token_in_db(token) -> Optional[JwtToken]:
 async def _get_valid_token() -> JwtToken:
     """
     Get a valid JWT token. If no valid token exists in the database, fetch a new one from the API.
+
+    Returns:
+        JwtToken: A valid JWT token.
     """
     # Get token from db
     db_token = await _fetch_token_from_db()
@@ -110,10 +140,8 @@ async def _get_valid_token() -> JwtToken:
 
     response = await _fetch_new_token_from_api()
 
-    # if response.status_code != 201:
-    if response.status_code != httpx.codes.CREATED:
+    if not httpx.codes.is_success(response.status_code):
         logger.error("Response status code: %s", response.status_code)
-        logger.error("Response text: %s", response.text)
         raise AuthenticationFailedError("Could not authenticate")
 
     body = response.json()
@@ -136,6 +164,9 @@ async def _get_valid_token() -> JwtToken:
 async def register_product(product: Product) -> None:
     """
     Register a product using the JWT token for authorization. If an error occurs during the HTTP request, log the error and return None.
+
+    Args:
+        product (Product): The product object to be registered.
     """
     jwt_token = await _get_valid_token()
 
@@ -159,7 +190,7 @@ async def register_product(product: Product) -> None:
                 f"An unexpected error occurred during product registration: {err}"
             ) from err
 
-        if response.status_code != httpx.codes.CREATED:
+        if not httpx.codes.is_success(response.status_code):
             logger.error(
                 f"Unsuccessful request, status code: {response.status_code}\n Error: {response.text}"
             )
@@ -178,6 +209,13 @@ async def _fetch_product_offers_from_api(
 ) -> httpx.Response:
     """
     Fetch offers for a specific product from the API.
+
+    Args:
+        jwt_token (JwtToken): A valid JWT token object for authorization.
+        product_id (str): The ID of the product to fetch the offers for.
+
+    Returns:
+        httpx.Response: Response object from the API call.
     """
     async with httpx.AsyncClient() as client:
         headers = {"bearer": jwt_token.token}
@@ -197,6 +235,13 @@ def _process_response_and_create_offers(
 ) -> list[Offer]:
     """
     Process the response from the API and create Offer objects.
+
+    Args:
+        response (httpx.Response): The response object from the API call.
+        product_id (str): The ID of the product for which the offers are to be created.
+
+    Returns:
+        list[Offer]: A list of Offer objects created from the response data.
     """
     body = response.json()
 
@@ -216,6 +261,9 @@ def _process_response_and_create_offers(
 def _store_offers_in_db(offers) -> None:
     """
     Store offers in the database. If a SQLAlchemyError occurs, log the error and raise a DatabaseError.
+
+    Args:
+        offers (list[Offer]): A list of Offer objects to be stored in the database.
     """
     try:
         with Session() as session:
@@ -229,6 +277,12 @@ def _store_offers_in_db(offers) -> None:
 async def get_offers(product_id: str) -> list[Offer]:
     """
     Get offers for a specific product. This includes fetching the offers from the API, processing the response, and storing the offers in the database.
+
+    Args:
+        product_id (str): The ID of the product to fetch the offers for.
+
+    Returns:
+        list[Offer]: A list of Offer objects fetched from the API.
     """
     jwt_token = await _get_valid_token()
     response = await _fetch_product_offers_from_api(jwt_token, product_id)
@@ -236,18 +290,3 @@ async def get_offers(product_id: str) -> list[Offer]:
     _store_offers_in_db(new_offers)
 
     return new_offers
-
-
-if __name__ == "__main__":
-    import asyncio
-    import uuid
-
-    for i in range(0, 11):
-        new_product = Product(
-            name=f"Product {i}",
-            description="Description" * i,
-            id=uuid.uuid4(),
-        )
-
-        print(f"Registering product {new_product.name}")
-        asyncio.run(register_product(new_product))
