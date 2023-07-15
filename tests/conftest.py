@@ -5,6 +5,9 @@ from unittest.mock import patch
 import pytest
 
 MOCKED_TIME = 1599999999.9
+PAST = MOCKED_TIME - 1
+PRESENT = MOCKED_TIME
+FUTURE = MOCKED_TIME + 1
 
 
 # this is required to make time.time() in tests consistent.

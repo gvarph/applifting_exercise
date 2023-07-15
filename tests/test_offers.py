@@ -4,12 +4,23 @@ import pytest
 from unittest.mock import AsyncMock, patch
 import httpx
 import jwt
+from psycopg2 import DatabaseError
+
 
 import src.env as env
-from src.offers import _decode_token, _fetch_new_token_from_api, _is_token_valid
+from src.offers import (
+    _decode_token,
+    _fetch_new_token_from_api,
+    _fetch_token_from_db,
+    _get_valid_token,
+    _is_token_valid,
+    _store_new_token_in_db,
+)
 from src.errors import ApiRequestError, InvalidJwtTokenError
 from src.models import JwtToken
-from tests.conftest import MOCKED_TIME
+from tests.conftest import PAST, PRESENT, FUTURE
+
+from sqlalchemy.exc import SQLAlchemyError
 
 
 # _is_token_valid test cases
@@ -17,11 +28,11 @@ from tests.conftest import MOCKED_TIME
     "token, expected",
     [
         # expired by 1 second
-        (JwtToken(token="token1", expiration=(MOCKED_TIME - 1)), False),
+        (JwtToken(token="token1", expiration=PAST), False),
         # just expired
-        (JwtToken(token="token2", expiration=MOCKED_TIME), False),
+        (JwtToken(token="token2", expiration=PRESENT), False),
         # valid for 1 more second
-        (JwtToken(token="token3", expiration=(MOCKED_TIME + 1)), True),
+        (JwtToken(token="token3", expiration=FUTURE), True),
         # Empty token should return False
         (None, False),
     ],
@@ -102,5 +113,26 @@ async def test_fetch_new_token_from_api_valid_response_but_no_token():
             await _fetch_new_token_from_api()
 
 
-def test_env_vars():
-    assert env.TOKEN_SECRET == "mock_token_secret"
+@pytest.mark.asyncio
+@patch("src.offers.Session")
+async def test_fetch_token_from_db_success(mocked_session):
+    mocked_session.return_value.__enter__.return_value.query.return_value.first.return_value = JwtToken(
+        token="test_token", expiration=FUTURE
+    )
+
+    result = await _fetch_token_from_db()
+
+    assert isinstance(result, JwtToken)
+    assert result.token == "test_token"
+    assert result.expiration == FUTURE
+
+
+@pytest.mark.asyncio
+@patch("src.offers.Session")
+async def test_fetch_token_from_db_failure(mocked_session):
+    mocked_session.return_value.__enter__.return_value.query.return_value.first.side_effect = (
+        SQLAlchemyError
+    )
+
+    with pytest.raises(DatabaseError, match="Database query failed"):
+        await _fetch_token_from_db()
