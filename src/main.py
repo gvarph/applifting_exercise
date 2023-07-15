@@ -4,10 +4,18 @@ import uuid
 from fastapi import FastAPI, HTTPException, Response, status
 from fastapi.encoders import jsonable_encoder
 
+from .errors import ApiRequestError
+
+from .offers import register_product
+
 from .db import Session
-from .models import Product, ProductModel
+from .models import CreateProductModel, Product, ProductModel
 
 app = FastAPI()
+
+from .util import get_logger
+
+logger = get_logger(__name__)
 
 
 @app.get("/products/", response_model=list[ProductModel], status_code=200)
@@ -29,20 +37,32 @@ async def read_products():
 
 
 @app.post("/products/", response_model=ProductModel, status_code=201)
-def create_product(data: ProductModel):
+async def create_product(data: CreateProductModel) -> ProductModel:
     if not data.name or not data.description:
         raise HTTPException(status_code=400, detail="Invalid product")
     try:
+        logger.debug(f"Creating product {data}")
         with Session() as session:
             db_product = data.toProduct()
+            logger.debug(f"Adding product {db_product}")
             session.add(db_product)
             session.commit()
             session.refresh(db_product)
-
-        # TODO: register product in offers service?
+        logger.debug(f"Registered product {db_product}")
+        await register_product(db_product)
 
         return db_product
+    except ApiRequestError as e:
+        logger.error(f"Error in offers service: {e}")
+        raise HTTPException(
+            status_code=500, detail="Communication with offers service failed"
+        )
+    except TypeError as e:
+        logger.error(f"Invalid product data: {data}")
+        logger.error(f"Error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        logger.debug(f"Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
