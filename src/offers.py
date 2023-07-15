@@ -64,13 +64,15 @@ async def _fetch_new_token_from_api() -> str:
     """
 
     async with httpx.AsyncClient() as client:
-        headers = {"Authorization": f"Bearer {TOKEN_SECRET}"}
+        headers = {"Bearer": TOKEN_SECRET}
 
+        url = API_URL + "/auth"
         try:
             response = await client.post(
-                url=API_URL + "/auth",
+                url=url,
                 headers=headers,
             )
+            logger.debug(f"Response: {response}")
             response.raise_for_status()
         except httpx.HTTPError as e:
             logger.error(f"HTTP request failed: {str(e)}")
@@ -150,6 +152,9 @@ async def _get_valid_token() -> JwtToken:
     if _is_token_valid(db_token):
         return db_token
 
+    else:
+        logger.debug(f"{db_token=} is not valid")
+
     logger.info("There is no token or it's invalid, requesting new token")
 
     access_token = await _fetch_new_token_from_api()
@@ -157,7 +162,8 @@ async def _get_valid_token() -> JwtToken:
     if not access_token:
         raise AuthenticationFailedError("Could not authenticate")
 
-    decoded_token = _decode_token(access_token)
+    decoded_token = _decode_token(access_token).get("data")
+    logger.debug(f"Decoded token: {decoded_token}")
     expiration = decoded_token.get("expires")
 
     new_token = JwtToken(
@@ -297,3 +303,17 @@ async def get_offers(product_id: str) -> list[Offer]:
     _store_offers_in_db(new_offers)
 
     return new_offers
+
+
+if __name__ == "__main__":
+    import asyncio
+
+    for i in range(10):
+        new_product = Product(
+            name="Test product " + str(i),
+            description="Test description " * i,
+            id=str(i),
+        )
+
+        asyncio.run(register_product(new_product))
+        logger.info("Product" + str(i) + " registered")
