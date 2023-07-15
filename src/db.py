@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker
-import env
+import src.env as env
 
 
 engine = create_engine(

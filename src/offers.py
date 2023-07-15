@@ -15,7 +15,7 @@ from errors import (
 )
 
 from models import JwtToken, Offer, Product
-from db import Session
+from src.db import Session
 from env import TOKEN_SECRET, API_URL
 from util import get_logger
 
