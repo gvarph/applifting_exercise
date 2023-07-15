@@ -9,7 +9,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from pydantic import BaseModel
 
 
-import src.db as db
+from . import db
 
 
 Base = declarative_base()

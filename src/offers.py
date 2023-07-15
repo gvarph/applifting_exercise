@@ -6,7 +6,7 @@ from psycopg2 import DatabaseError
 from sqlalchemy.exc import SQLAlchemyError
 from jwt.exceptions import InvalidTokenError
 
-from errors import (
+from .errors import (
     ApiRequestError,
     AuthenticationFailedError,
     InvalidJwtTokenError,
@@ -14,10 +14,10 @@ from errors import (
     ProductRegistrationError,
 )
 
-from models import JwtToken, Offer, Product
-from src.db import Session
-from env import TOKEN_SECRET, API_URL
-from util import get_logger
+from .models import JwtToken, Offer, Product
+from .db import Session
+from .env import TOKEN_SECRET, API_URL
+from .util import get_logger
 
 logger = get_logger(__name__)
 

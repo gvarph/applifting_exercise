@@ -1,6 +1,6 @@
 import logging
 
-from env import LOG_LEVEL
+from .env import LOG_LEVEL
 
 
 def get_logger(name: str) -> logging.Logger:

@@ -4,8 +4,8 @@ import uuid
 from fastapi import FastAPI, HTTPException, Response, status
 from fastapi.encoders import jsonable_encoder
 
-from src.db import Session
-from models import Product, ProductModel
+from .db import Session
+from .models import Product, ProductModel
 
 app = FastAPI()
 
