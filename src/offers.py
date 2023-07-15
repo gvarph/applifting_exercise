@@ -16,7 +16,7 @@ from .errors import (
 
 from .models import JwtToken, Offer, Product
 from .db import Session
-from .env import TOKEN_SECRET, API_URL
+import src.env as env
 from .util import get_logger
 
 logger = get_logger(__name__)
@@ -64,9 +64,9 @@ async def _fetch_new_token_from_api() -> str:
     """
 
     async with httpx.AsyncClient() as client:
-        headers = {"Bearer": TOKEN_SECRET}
+        headers = {"Bearer": env.TOKEN_SECRET}
 
-        url = API_URL + "/auth"
+        url = env.API_URL + "/auth"
         try:
             response = await client.post(
                 url=url,
@@ -184,7 +184,7 @@ async def register_product(product: Product) -> None:
 
         try:
             response = await client.post(
-                url=API_URL + "/products/register",
+                url=env.API_URL + "/products/register",
                 json=product.to_dict(),
                 headers=headers,
             )
@@ -231,7 +231,7 @@ async def _fetch_product_offers_from_api(
 
         try:
             return await client.get(
-                url=API_URL + "/products/" + product_id + "/offers",
+                url=env.API_URL + "/products/" + product_id + "/offers",
                 headers=headers,
             )
         except httpx.HTTPError as e:
