@@ -73,13 +73,10 @@ async def _fetch_new_token_from_api() -> str:
                 headers=headers,
             )
             logger.debug(f"Response: {response}")
-            response.raise_for_status()
+            await response.raise_for_status()
         except httpx.HTTPError as e:
             logger.error(f"HTTP request failed: {str(e)}")
             raise ApiRequestError(f"HTTP request failed: {str(e)}") from e
-
-    if not response.is_json:
-        raise ApiRequestError("Response is not JSON")
 
     body = await response.json()
 
@@ -88,7 +85,6 @@ async def _fetch_new_token_from_api() -> str:
     if not access_token:
         logger.debug(f"Response body: {body}")
         raise ApiRequestError("Response does not contain access token")
-
     return access_token
 
 
@@ -303,17 +299,3 @@ async def get_offers(product_id: str) -> list[Offer]:
     _store_offers_in_db(new_offers)
 
     return new_offers
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    for i in range(10):
-        new_product = Product(
-            name="Test product " + str(i),
-            description="Test description " * i,
-            id=str(i),
-        )
-
-        asyncio.run(register_product(new_product))
-        logger.info("Product" + str(i) + " registered")

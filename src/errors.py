@@ -1,4 +1,3 @@
-# TODO: make this a custom exception and move it to a separate file
 class AuthenticationFailedError(Exception):
     """Exception raised for errors in the authentication process"""
 
