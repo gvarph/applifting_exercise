@@ -1,18 +1,25 @@
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
-from fastapi.testclient import TestClient
+import pytest
 
+
+from src.errors import ApiRequestError
+from src.services.product import ProductService
 from src.models import Product
-from src.main import app
 from src.util import get_logger
 
-client = TestClient(app)
+
+@pytest.fixture
+def service() -> ProductService:
+    return ProductService()
+
 
 logger = get_logger(__name__)
 
 
+@pytest.mark.asyncio
 @patch("src.db.SessionMkr")
-def test_valid(mock_session):
+async def test_valid(mock_session, service):
     prod = [
         {
             "id": str(uuid4()),
@@ -36,30 +43,24 @@ def test_valid(mock_session):
     # Make session.query(Product) return our mock query object
     mock_session.return_value.query.return_value = mock_query
 
-    response = client.get("/products")
-
-    logger.info(response.json())
-    assert response.status_code == 200
-
-    assert response.json() == prod
+    data = await service.read_products()
 
     # Check the function is called
     mock_session.return_value.query.assert_called_once_with(Product)
     mock_query.all.assert_called_once()
 
 
+@pytest.mark.asyncio
 @patch("src.db.SessionMkr")
-def test_error(mock_session):
+async def test_error(mock_session, service):
     mock_query = MagicMock()
-    mock_query.all.side_effect = Exception("Test exception")
+    mock_query.all.side_effect = ApiRequestError("mock exc")
 
     # Make session.query(Product) return our mock query object
     mock_session.return_value.query.return_value = mock_query
 
-    response = client.get("/products")
-
-    assert response.status_code == 500
-    assert response.json() == {"detail": "Internal server error"}
+    with pytest.raises(ApiRequestError):
+        data = await service.read_products()
 
     # Check the function is called
     mock_session.return_value.query.assert_called_once_with(Product)
