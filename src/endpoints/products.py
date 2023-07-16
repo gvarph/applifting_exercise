@@ -3,6 +3,8 @@ import uuid
 
 from fastapi import HTTPException, APIRouter, Depends
 
+from ..services.product import ProductService
+
 
 from ..auth import auth_wrapper
 from ..db import session_scope
@@ -22,6 +24,8 @@ router = APIRouter()
 
 from fastapi import Depends
 
+service = ProductService()
+
 
 @router.get("/products/", response_model=list[ProductModel], status_code=200)
 async def read_products() -> list[ProductModel]:
@@ -34,17 +38,8 @@ async def read_products() -> list[ProductModel]:
     Returns:
         list[ProductModel]: A list of product model objects.
     """
-    try:
-        with session_scope() as session:
-            all_products = session.query(Product).all()
-
-            logger.info(f"Found {len(all_products)} products")
-            # convert to ProductModel
-            models = [ProductModel.from_product(product) for product in all_products]
-        return models
-    except Exception as e:
-        logger.error(f"Error reading products: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+    __doc__ = service.read_products.__doc__
+    return await service.read_products()
 
 
 @router.post("/products/", response_model=ProductModel, status_code=201)
@@ -64,43 +59,7 @@ async def create_product(
         ProductModel: The created product as a ProductModel object.
     """
 
-    if not data.name or not data.description:
-        raise HTTPException(status_code=400, detail="Invalid product")
-    try:
-        logger.info(f"User {username} is creating product {data.name}")
-
-        with session_scope() as session:
-            # create product
-            db_product: Product = Product(name=data.name, description=data.description)
-
-            # persist product
-            session.add(db_product)
-            session.commit()
-
-            session.refresh(db_product)
-
-            await register_product(db_product, session)
-
-            # fetch offers for the first time
-            await fetch_products(db_product, session)
-
-            product_model = ProductModel.from_product(db_product)
-
-        return product_model
-
-    except AuthenticationFailedError as e:
-        logger.error(f"Offer API Authentication failed: {e}")
-        raise HTTPException(
-            status_code=400, detail=f"Offer API authentication failed: {e}"
-        )
-    except ApiRequestError as e:
-        logger.error(f"Error in offers service: {e}")
-        raise HTTPException(
-            status_code=500, detail="Communication with offers service failed"
-        )
-    except Exception as e:
-        logger.error(f"Error creating product: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+    return await service.create_product(data)
 
 
 @router.put("/products/{product_id}", status_code=200)
@@ -120,24 +79,7 @@ async def update_product(
     Returns:
         ProductModel: The updated product as a ProductModel object.
     """
-
-    try:
-        logger.info(f"User {username} is updating product {product_id}")
-        with session_scope() as session:
-            session.query(Product).filter(Product.id == product_id).update(
-                {
-                    Product.name: new_product.name,
-                    Product.description: new_product.description,
-                }
-            )
-            session.commit()
-
-            # TODO: update product in offers service?
-            db_product = session.query(Product).filter(Product.id == product_id).first()
-
-        return db_product
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return await service.update_product(product_id, new_product)
 
 
 @router.delete("/products/{product_id}", status_code=204)
@@ -153,21 +95,7 @@ async def delete_product(product_id: uuid.UUID, username=Depends(auth_wrapper)):
         HTTPException: If the product is not found or if an unexpected error occurs during the operation.
     """
 
-    try:
-        logger.info(f"User {username} is deleting product {product_id}")
-        with session_scope() as session:
-            delete_stmt = (
-                session.query(Product).filter(Product.id == product_id).delete()
-            )
-
-            if not delete_stmt:
-                raise HTTPException(status_code=404, detail="Product not found")
-            session.commit()
-            # TODO: delete product in offers service?
-        return
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return await service.delete_product(product_id)
 
 
 @router.get(
@@ -189,37 +117,4 @@ async def get_offers(
         list[OfferModel]: A list of offer model objects for the product.
     """
 
-    logger.debug(f"Getting offers for product {product_id}")
-    try:
-        with session_scope() as session:
-            # check if product exists
-            product: Product | None = (
-                session.query(Product).filter(Product.id == product_id).first()
-            )
-            if not product:
-                raise HTTPException(status_code=404, detail="Product not found")
-
-            last_fetch_of_product: Fetch | None = (
-                session.query(Fetch)
-                .where(Fetch.product_id == product_id)
-                .order_by(Fetch.time.desc())
-                .first()
-            )
-
-            if not last_fetch_of_product:
-                # We know the product exists, but there are no offers for it
-                raise HTTPException(status_code=404, detail="No offers found")
-
-            fetches_on_product = product.fetches
-
-            # get fetch with highest time
-            last_fetch = max(fetches_on_product, key=lambda f: f.time)
-
-            offers: List[Offer] = last_fetch.offers
-
-            models = [OfferModel.from_offer(offer, product_id) for offer in offers]
-
-            return models
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return await service.get_offers(product_id)
