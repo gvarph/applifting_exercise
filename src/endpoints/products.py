@@ -1,13 +1,19 @@
 import uuid
 
 from fastapi import APIRouter, Depends
+from fastapi.params import Query
 
 from ..services.product import ProductService
 
 
 from ..auth import auth_wrapper
 
-from ..schemas import CreateProductModel, OfferModel, ProductModel
+from ..schemas import (
+    CreateProductModel,
+    OfferModel,
+    OfferPriceSummary,
+    ProductModel,
+)
 from ..util import get_logger
 
 logger = get_logger(__name__)
@@ -123,3 +129,27 @@ async def get_offers(
     """
 
     return await service.get_offers(product_id)
+
+
+@router.get(
+    "/products/{product_id}/price-history",
+    status_code=200,
+    response_model=list[OfferPriceSummary],
+)
+async def get_price_history(
+    product_id: uuid.UUID,
+    from_time: int = Query(...),
+    to_time: int = Query(...),
+    service: ProductService = Depends(get_product_service),
+) -> list[OfferPriceSummary]:
+    """
+    Get the price history for a particular product from the database.
+
+    Args:
+        product_id (uuid.UUID): The ID of the product for which to fetch the price history.
+        range (TimeRange): The time range for which to fetch the price history in unix epoch time.
+    Returns:
+        list[OfferPriceSummary]: A list of offer price summary objects for the product.
+    """
+    logger.info(f"Getting price history for product {product_id}")
+    return await service.get_price_history(product_id, from_time, to_time)

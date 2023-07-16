@@ -71,3 +71,12 @@ class AuthModel(BaseModel):
 
 class TokenModel(BaseModel):
     username: Optional[str] = None
+
+
+class OfferPriceSummary(BaseModel):
+    time: int
+    min: float
+    max: float
+    avg: float
+    median: float
+    count: int
