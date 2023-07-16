@@ -13,6 +13,19 @@ logger = get_logger(__name__)
 
 @router.post("/token")
 def login(authData: AuthModel) -> dict[str, str]:
+    """
+    Authenticate user and generate an access token.
+
+    Parameters:
+    - authData (AuthModel): User authentication data containing `username` and `password`.
+
+    Returns:
+    - dict[str, str]: A dictionary containing the generated access `token`.
+
+    Raises:
+    - HTTPException(401): If the provided username or password is invalid.
+    """
+
     if authData.username not in fake_users_db:
         raise HTTPException(status_code=401, detail="Invalid username")
 
