@@ -59,7 +59,7 @@ def test_error(mock_session):
     response = client.get("/products")
 
     assert response.status_code == 500
-    assert response.json() == {"detail": "Test exception"}
+    assert response.json() == {"detail": "Internal server error"}
 
     # Check the function is called
     mock_session.return_value.query.assert_called_once_with(Product)
