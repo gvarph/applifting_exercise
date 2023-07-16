@@ -15,7 +15,7 @@ from ..models import (
 )
 from ..schemas import CreateProductModel, OfferModel, OfferPriceSummary, ProductModel
 from ..offers import fetch_products, register_product
-from ..util import get_logger
+from ..logger import get_logger
 
 logger = get_logger(__name__)
 

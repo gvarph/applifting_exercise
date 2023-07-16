@@ -21,7 +21,7 @@ from .models import Fetch, JwtToken, Offer, Product
 from .schemas import OfferModel
 from .db import session_scope
 import src.env as env
-from .util import get_logger
+from .logger import get_logger
 
 
 logger = get_logger(__name__)

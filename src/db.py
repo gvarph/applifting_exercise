@@ -5,7 +5,7 @@ from sqlalchemy.orm.session import Session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from .util import get_logger
+from .logger import get_logger
 from .env import DATABASE_URL
 
 logger = get_logger(__name__)

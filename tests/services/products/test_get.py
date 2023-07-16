@@ -6,7 +6,7 @@ import pytest
 from src.errors import ApiRequestError
 from src.services.product import ProductService
 from src.models import Product
-from src.util import get_logger
+from logger import get_logger
 
 
 @pytest.fixture

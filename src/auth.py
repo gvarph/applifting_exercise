@@ -10,7 +10,7 @@ from passlib.hash import sha256_crypt
 
 from .schemas import TokenModel
 from .env import JWT_SECRET, ALGORITHM, JWT_TOKEN_EXPIRE_MINUTES
-from .util import get_logger
+from .logger import get_logger
 
 logger = get_logger(__name__)
 

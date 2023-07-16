@@ -14,7 +14,7 @@ from ..schemas import (
     OfferPriceSummary,
     ProductModel,
 )
-from ..util import get_logger
+from ..logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -152,4 +152,7 @@ async def get_price_history(
         list[OfferPriceSummary]: A list of offer price summary objects for the product.
     """
     logger.info(f"Getting price history for product {product_id}")
+
+    # start timer
+
     return await service.get_price_history(product_id, from_time, to_time)

@@ -8,7 +8,7 @@ from sqlalchemy.orm import declarative_base, relationship, Relationship
 
 from . import db
 from .errors import EntityNotFound
-from .util import get_logger
+from .logger import get_logger
 
 
 logger = get_logger(__name__)

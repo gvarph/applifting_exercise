@@ -3,7 +3,7 @@ from starlette.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from ..util import get_logger
+from ..logger import get_logger
 
 from ..errors import (
     AuthenticationFailedError,

@@ -3,7 +3,7 @@ import asyncio
 from .models import Product
 from .db import SessionMkr, session_scope
 import src.env as env
-from .util import get_logger
+from .logger import get_logger
 from .offers import fetch_products
 
 logger = get_logger(__name__)

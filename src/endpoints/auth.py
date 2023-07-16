@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from fastapi.routing import APIRouter
 
-from ..util import get_logger
+from ..logger import get_logger
 from ..auth import create_token, fake_users_db, hash_password, validate_password
 from ..schemas import AuthModel
 
