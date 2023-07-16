@@ -11,7 +11,7 @@ client = TestClient(app)
 logger = get_logger(__name__)
 
 
-@patch("src.db.Session")
+@patch("src.db.SessionMkr")
 def test_valid(mock_session):
     prod = [
         {
@@ -48,7 +48,7 @@ def test_valid(mock_session):
     mock_query.all.assert_called_once()
 
 
-@patch("src.db.Session")
+@patch("src.db.SessionMkr")
 def test_error(mock_session):
     mock_query = MagicMock()
     mock_query.all.side_effect = Exception("Test exception")
