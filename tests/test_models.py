@@ -1,14 +1,15 @@
+from unittest.mock import Mock, patch
 from uuid import uuid4
 
 import pytest
+
 from src.models import (
-    CreateProductModel,
     JwtToken,
-    Offer,
-    OfferModel,
     Product,
-    ProductModel,
+    link_offer_to_fetch,
 )
+
+from src.schemas import CreateProductModel, ProductModel
 
 
 @pytest.fixture
@@ -33,11 +34,24 @@ def test_product_to_dict(product):
 
 def test_productModel_toProduct():
     product_model = ProductModel(id=uuid4(), name="test", description="test")
-    assert product_model.to_product() == Product(
-        id=product_model.id,
-        name=product_model.name,
-        description=product_model.description,
-    )
+    product: Product = product_model.to_product()
+
+    # does not have a proper comparison method so we have to compare each field
+
+    assert product.id == product_model.id
+    assert product.name == product_model.name
+    assert product.description == product_model.description
+
+
+def test_productModel_fromProduct():
+    product = Product(id=uuid4(), name="test", description="test")
+    product_model = ProductModel.from_product(product)
+
+    # does not have a proper comparison method so we have to compare each field
+
+    assert product.id == product_model.id
+    assert product.name == product_model.name
+    assert product.description == product_model.description
 
 
 def test_jwtToken_to_str():
@@ -56,14 +70,44 @@ def test_createModelProduct_toProduct():
     assert modelProduct.id is not None
 
 
-""" def test_offerModel_toOffer():
-    offerModel = OfferModel(
-        id=uuid4(), price=1234, items_in_stock=1234, product_id=uuid4()
+@patch("src.db.Session")
+@patch("src.models.Offer")
+def test_link_offer_to_fetch_success(mock_offer, mock_session):
+    mock_offer_instance = Mock()
+    mock_fetch_instance = Mock()
+    mock_offer.id = 1
+    mock_session.query.return_value.filter_by.return_value.first.return_value = (
+        mock_offer_instance
     )
-    assert offerModel.toOffer() == Offer(
-        id=offerModel.id,
-        price=offerModel.price,
-        items_in_stock=offerModel.items_in_stock,
-        product_id=offerModel.product_id,
-    ) #TODO: fix this test
- """
+
+    link_offer_to_fetch(mock_offer, mock_fetch_instance, mock_session)
+
+    mock_fetch_instance.offers.append.assert_called_with(mock_offer_instance)
+
+
+@patch("src.db.Session")
+@patch("src.models.Offer")
+def test_link_offer_to_fetch_offer_not_found(mock_offer, mock_session):
+    mock_fetch_instance = Mock()
+    mock_offer.id = 1
+    mock_session.query.return_value.filter_by.return_value.first.return_value = None
+
+    with pytest.raises(Exception):  # Adjust this to match the exception you expect
+        link_offer_to_fetch(mock_offer, mock_fetch_instance, mock_session)
+
+    mock_fetch_instance.offers.append.assert_not_called()
+
+
+@patch("src.db.Session")
+@patch("src.models.Offer")
+def test_link_offer_to_fetch_fetch_not_found(mock_offer, mock_session):
+    mock_offer_instance = Mock()
+    mock_offer.id = 1
+    mock_session.query.return_value.filter_by.return_value.first.return_value = (
+        mock_offer_instance
+    )
+
+    with pytest.raises(Exception):  # Adjust this to match the exception you expect
+        link_offer_to_fetch(mock_offer, None, mock_session)
+
+    mock_offer_instance.offers.append.assert_not_called()

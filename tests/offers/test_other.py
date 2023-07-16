@@ -1,7 +1,7 @@
 from typing import Optional
+
 import pytest
 import jwt
-
 
 from src.offers import (
     _decode_token,

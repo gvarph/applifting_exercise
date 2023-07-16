@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, Mock, patch
 import httpx
+
 import src.env as env
 from src.offers import _fetch_new_token_from_api
 from src.errors import ApiRequestError
