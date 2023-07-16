@@ -1,7 +1,7 @@
 import asyncio
 
 from .models import Product
-from .db import Session, session_scope
+from .db import SessionMkr, session_scope
 import src.env as env
 from .util import get_logger
 from .offers import fetch_products
@@ -24,9 +24,9 @@ class OfferWorker:
         cls._is_running = False  # will stop on the next iteration
 
     @classmethod
-    async def periodic_fetch_offers(self):
+    async def periodic_fetch_offers(cls):
         logger.debug("Starting periodic fetch")
-        while self._is_running:
+        while cls._is_running:
             with session_scope() as session:
                 products = session.query(Product).all()
 

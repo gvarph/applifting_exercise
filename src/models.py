@@ -1,16 +1,17 @@
+import uuid
 from dataclasses import dataclass
 from typing import List
-from sqlalchemy.orm import relationship
-import uuid
+
 from sqlalchemy import Column, Float, Integer, String, ForeignKey, Table
 from sqlalchemy.dialects.postgresql import UUID
-
-from sqlalchemy.orm import declarative_base, Mapped, Relationship
-
-from pydantic import BaseModel
-
+from sqlalchemy.orm import declarative_base, relationship, Relationship
 
 from . import db
+from .errors import EntityNotFound
+from .util import get_logger
+
+
+logger = get_logger(__name__)
 
 
 Base = declarative_base()
@@ -33,6 +34,7 @@ offer_fetch = Table(
     Base.metadata,
     Column("offer_id", UUID, ForeignKey("offers.id")),
     Column("fetch_id", UUID, ForeignKey("fetch.id")),
+    Column("id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
 )
 
 
@@ -45,6 +47,9 @@ class Offer(Base):
     items_in_stock = Column(Integer)
     product_id = Column(UUID, ForeignKey("products.id"))
 
+    def __repr__(self):
+        return f"<Offer(id={self.id}, price={self.price}, items_in_stock={self.items_in_stock})>"
+
 
 @dataclass
 class Fetch(Base):
@@ -54,30 +59,6 @@ class Fetch(Base):
     time = Column(Float)
 
     product_id = Column(UUID, ForeignKey("products.id"))
-
-
-class OfferModel(BaseModel):
-    id: uuid.UUID
-    price: int
-    items_in_stock: int
-    product_id: uuid.UUID
-
-    def to_offer(self, fetch_batch: uuid.UUID):
-        return Offer(
-            id=self.id,
-            price=self.price,
-            items_in_stock=self.items_in_stock,
-            fetch_batch=fetch_batch,
-        )
-
-    @staticmethod
-    def from_offer(offer: Offer):
-        return OfferModel(
-            id=offer.id,
-            price=offer.price,
-            items_in_stock=offer.items_in_stock,
-            product_id=offer.product_id,
-        )
 
 
 @dataclass
@@ -108,37 +89,6 @@ class Product(Base):
         }
 
 
-class CreateProductModel(BaseModel):
-    name: str
-    description: str
-
-    def to_product(self):
-        new_product = Product(
-            name=self.name, description=self.description, id=uuid.uuid4()
-        )
-
-        return new_product
-
-
-class ProductModel(CreateProductModel):
-    id: uuid.UUID
-
-    def to_product(self):
-        return Product(
-            id=self.id,
-            name=self.name,
-            description=self.description,
-        )
-
-    @staticmethod
-    def from_product(product: Product):
-        return ProductModel(
-            id=product.id,
-            name=product.name,
-            description=product.description,
-        )
-
-
 Offer.product: Relationship[Product] = relationship("Product", back_populates="offers")
 
 Fetch.product: Relationship[Product] = relationship("Product", back_populates="fetches")
@@ -149,3 +99,13 @@ Fetch.offers: Relationship[List[Offer]] = relationship(
 
 
 Base.metadata.create_all(db.engine)
+
+
+def link_offer_to_fetch(offer: Offer, fetch: Offer, session: db.Session):
+    offer = session.query(Offer).filter_by(id=offer.id).first()
+
+    if offer and fetch:
+        fetch.offers.append(offer)
+    else:
+        logger.debug("Offer or fetch not found")
+        raise EntityNotFound("Offer or fetch not found")
