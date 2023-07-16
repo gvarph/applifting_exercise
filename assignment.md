@@ -45,8 +45,8 @@ Must haves:
 
 You can earn extra points for:
 
-- [ ] JSON REST API simple authentication (e.g. access-token)
-- [ ] Consider adding some reasonable error handling to the API layer
+- [x] JSON REST API simple authentication (e.g. access-token)
+- [x] Consider adding some reasonable error handling to the API layer
 - [ ] Provide a working Dockerfile and docker-compose.yml for your application for easy testing
 - [x] Use reasonable dependency management (requirements.txt, Pipenv, Poetry, ...)
 - [ ] Deploy your application to Heroku
