@@ -74,7 +74,7 @@ class TokenModel(BaseModel):
 
 
 class OfferPriceSummary(BaseModel):
-    time: int
+    time: float
     min: float
     max: float
     avg: float

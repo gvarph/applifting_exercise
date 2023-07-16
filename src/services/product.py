@@ -1,3 +1,4 @@
+from ast import Tuple
 from typing import List
 import uuid
 
@@ -10,6 +11,7 @@ from ..models import (
     Fetch,
     Offer,
     Product,
+    offer_fetch,
 )
 from ..schemas import CreateProductModel, OfferModel, OfferPriceSummary, ProductModel
 from ..offers import fetch_products, register_product
@@ -114,38 +116,38 @@ class ProductService:
 
             return models
 
-    async def get_price_history(product_id: str, from_time: int, to_time: int):
+    async def get_price_history(
+        self, product_id: str, from_time: float, to_time: float
+    ) -> list[OfferPriceSummary]:
         with session_scope() as session:
             product = session.query(Product).filter(Product.id == product_id).first()
             if not product:
                 raise EntityNotFound("Product not found")
 
             fetches = (
-                Fetch.where(
-                    Fetch.product_id == product_id,
-                    Fetch.time >= from_time,
-                    Fetch.time <= to_time,
-                )
+                session.query(Fetch)
+                .filter(Fetch.product_id == product_id)
+                .filter(Fetch.time >= from_time)
+                .filter(Fetch.time <= to_time)
                 .order_by(Fetch.time.desc())
                 .all()
             )
 
-            logger.info(f"Found {len(fetches)} fetches for product {product_id}")
-
-            processed_fetches: List[OfferPriceSummary] = []
+            calculated_prices: List[OfferPriceSummary] = []
             for fetch in fetches:
-                offers: List[Offer] = fetch.offers
+                offers = fetch.offers
+
                 prices = [offer.price for offer in offers]
 
                 summary = OfferPriceSummary(
                     time=fetch.time,
-                    min_price=min(prices),
-                    max_price=max(prices),
-                    avg_price=sum(prices) / len(prices),
-                    median_price=prices[len(prices) // 2],
+                    min=min(prices),
+                    max=max(prices),
+                    avg=sum(prices) / len(prices),
+                    median=prices[len(prices) // 2],
+                    count=len(prices),
                 )
 
-                processed_fetches.append(summary)
+                calculated_prices.append(summary)
 
-            logger.info(f"Processed {len(processed_fetches)} fetches")
-            return processed_fetches
+            return calculated_prices
