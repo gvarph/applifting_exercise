@@ -1,21 +1,13 @@
-from typing import List
 import uuid
 
-from fastapi import HTTPException, APIRouter, Depends
+from fastapi import APIRouter, Depends
 
 from ..services.product import ProductService
 
 
 from ..auth import auth_wrapper
-from ..db import session_scope
-from ..errors import ApiRequestError, AuthenticationFailedError
-from ..models import (
-    Fetch,
-    Offer,
-    Product,
-)
+
 from ..schemas import CreateProductModel, OfferModel, ProductModel
-from ..offers import fetch_products, register_product
 from ..util import get_logger
 
 logger = get_logger(__name__)
@@ -24,11 +16,16 @@ router = APIRouter()
 
 from fastapi import Depends
 
-service = ProductService()
+
+# unnecessary dependency injection
+def get_product_service() -> ProductService:
+    return ProductService()
 
 
 @router.get("/products/", response_model=list[ProductModel], status_code=200)
-async def read_products() -> list[ProductModel]:
+async def read_products(
+    service: ProductService = Depends(get_product_service),
+) -> list[ProductModel]:
     """
     Read all products from the database and returns them as ProductModels.
 
@@ -38,13 +35,14 @@ async def read_products() -> list[ProductModel]:
     Returns:
         list[ProductModel]: A list of product model objects.
     """
-    __doc__ = service.read_products.__doc__
     return await service.read_products()
 
 
 @router.post("/products/", response_model=ProductModel, status_code=201)
 async def create_product(
-    data: CreateProductModel, username=Depends(auth_wrapper)
+    data: CreateProductModel,
+    username=Depends(auth_wrapper),
+    service: ProductService = Depends(get_product_service),
 ) -> ProductModel:
     """
     Create a new product and persists it in the database.
@@ -64,7 +62,10 @@ async def create_product(
 
 @router.put("/products/{product_id}", status_code=200)
 async def update_product(
-    product_id: uuid.UUID, new_product: ProductModel, username=Depends(auth_wrapper)
+    product_id: uuid.UUID,
+    new_product: ProductModel,
+    username=Depends(auth_wrapper),
+    service: ProductService = Depends(get_product_service),
 ) -> ProductModel:
     """
     Update an existing product in the database.
@@ -83,13 +84,16 @@ async def update_product(
 
 
 @router.delete("/products/{product_id}", status_code=204)
-async def delete_product(product_id: uuid.UUID, username=Depends(auth_wrapper)):
+async def delete_product(
+    product_id: uuid.UUID,
+    user=Depends(auth_wrapper),
+    service: ProductService = Depends(get_product_service),
+):
     """
     Delete a product from the database.
 
     Args:
         product_id (uuid.UUID): The ID of the product to delete.
-        username (str): The username of the user making the request.
 
     Raises:
         HTTPException: If the product is not found or if an unexpected error occurs during the operation.
@@ -103,6 +107,7 @@ async def delete_product(product_id: uuid.UUID, username=Depends(auth_wrapper)):
 )
 async def get_offers(
     product_id: uuid.UUID,
+    service: ProductService = Depends(get_product_service),
 ) -> list[OfferModel]:
     """
     Get all offers for a particular product from the database.

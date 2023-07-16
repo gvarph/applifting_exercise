@@ -1,10 +1,9 @@
 from typing import List
 import uuid
 
-from fastapi import HTTPException, APIRouter, Depends
+from fastapi import HTTPException, APIRouter
 
 
-from ..auth import auth_wrapper
 from ..db import session_scope
 from ..errors import ApiRequestError, AuthenticationFailedError, EntityNotFound
 from ..models import (
@@ -19,8 +18,6 @@ from ..util import get_logger
 logger = get_logger(__name__)
 
 router = APIRouter()
-
-from fastapi import Depends
 
 
 class ProductService:
