@@ -1,0 +1,29 @@
+version: '3'
+services:
+  myapp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8000:8000
+    environment:
+      # replace the SAMPLEPASSWORD with your own password
+      - DATABASE_URL=postgresql://postgres:SAMPLEPASSWORD@postgres:5432/postgres
+      # replace with token obtained from applifting
+      - TOKEN_SECRET=sample-token-secret-1234-abcd
+      # replace with a randomly generated string
+      - JWT_SECRET=sample-jwt-secret-1234-abcd
+
+      - API_URL=https://sample.api.url/api/v1
+      - LOG_LEVEL=INFO
+
+# You can omit the following variables if you want to run your own postgres instance
+    depends_on:
+      - postgres
+  postgres:
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=postgres
+      # replace the SAMPLEPASSWORD with your own password (same as above)
+      - POSTGRES_PASSWORD=SAMPLEPASSWORD
+      - POSTGRES_DB=postgres

@@ -4,7 +4,6 @@ version = "0.1.0"
 description = "Simple Product aggregator microservice created as a coding excercise"
 authors = ["Filip Krul <gvarph006@gmail.com>"]
 readme = "README.md"
-packages = [{include = "applifting_exercise"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
