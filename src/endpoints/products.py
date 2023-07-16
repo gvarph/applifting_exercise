@@ -3,6 +3,8 @@ import uuid
 from fastapi import APIRouter, Depends
 from fastapi.params import Query
 
+from ..util import time_coro, time_func
+
 from ..services.product import ProductService
 
 
@@ -153,6 +155,6 @@ async def get_price_history(
     """
     logger.info(f"Getting price history for product {product_id}")
 
-    # start timer
+    # x = await time_coro(service.get_price_history, product_id, from_time, to_time)
 
     return await service.get_price_history(product_id, from_time, to_time)

@@ -50,4 +50,4 @@ You can earn extra points for:
 - [ ] Provide a working Dockerfile and docker-compose.yml for your application for easy testing
 - [x] Use reasonable dependency management (requirements.txt, Pipenv, Poetry, ...)
 - [ ] Deploy your application to Heroku
-- [ ] Track the history of offer prices and create an endpoint which returns the trend in offer prices and compute the percentual rise / fall in price for a chosen period of time
+- [x] Track the history of offer prices and create an endpoint which returns the trend in offer prices and compute the percentual rise / fall in price for a chosen period of time

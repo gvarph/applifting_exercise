@@ -97,8 +97,6 @@ Fetch.offers: Relationship[List[Offer]] = relationship(
     "Offer", secondary=offer_fetch, cascade="all, delete"
 )
 
-Offer.fetches: Relationship[List[Fetch]] = relationship("Fetch", secondary=offer_fetch)
-
 
 Base.metadata.create_all(db.engine)
 
