@@ -1,7 +1,7 @@
 from typing import List
 import uuid
 
-from fastapi import HTTPException, status, APIRouter, Depends
+from fastapi import HTTPException, APIRouter, Depends
 
 
 from ..auth import auth_wrapper
@@ -25,6 +25,15 @@ from fastapi import Depends
 
 @router.get("/products/", response_model=list[ProductModel], status_code=200)
 async def read_products() -> list[ProductModel]:
+    """
+    Read all products from the database and returns them as ProductModels.
+
+    Raises:
+        HTTPException: if an unexpected error occurs during the operation.
+
+    Returns:
+        list[ProductModel]: A list of product model objects.
+    """
     try:
         with session_scope() as session:
             all_products = session.query(Product).all()
@@ -35,7 +44,6 @@ async def read_products() -> list[ProductModel]:
         return models
     except Exception as e:
         logger.error(f"Error reading products: {e}")
-        raise e
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -43,6 +51,19 @@ async def read_products() -> list[ProductModel]:
 async def create_product(
     data: CreateProductModel, username=Depends(auth_wrapper)
 ) -> ProductModel:
+    """
+    Create a new product and persists it in the database.
+
+    Args:
+        data (CreateProductModel): The model containing the details of the product to create.
+
+    Raises:
+        HTTPException: If the product details are invalid or if an unexpected error occurs during the operation.
+
+    Returns:
+        ProductModel: The created product as a ProductModel object.
+    """
+
     if not data.name or not data.description:
         raise HTTPException(status_code=400, detail="Invalid product")
     try:
@@ -86,6 +107,20 @@ async def create_product(
 async def update_product(
     product_id: uuid.UUID, new_product: ProductModel, username=Depends(auth_wrapper)
 ) -> ProductModel:
+    """
+    Update an existing product in the database.
+
+    Args:
+        product_id (uuid.UUID): The ID of the product to update.
+        new_product (ProductModel): The model containing the updated details of the product.
+
+    Raises:
+        HTTPException: If an unexpected error occurs during the operation.
+
+    Returns:
+        ProductModel: The updated product as a ProductModel object.
+    """
+
     try:
         logger.info(f"User {username} is updating product {product_id}")
         with session_scope() as session:
@@ -99,7 +134,7 @@ async def update_product(
 
             # TODO: update product in offers service?
             db_product = session.query(Product).filter(Product.id == product_id).first()
-        print(db_product)
+
         return db_product
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -107,6 +142,17 @@ async def update_product(
 
 @router.delete("/products/{product_id}", status_code=204)
 async def delete_product(product_id: uuid.UUID, username=Depends(auth_wrapper)):
+    """
+    Delete a product from the database.
+
+    Args:
+        product_id (uuid.UUID): The ID of the product to delete.
+        username (str): The username of the user making the request.
+
+    Raises:
+        HTTPException: If the product is not found or if an unexpected error occurs during the operation.
+    """
+
     try:
         logger.info(f"User {username} is deleting product {product_id}")
         with session_scope() as session:
@@ -130,6 +176,19 @@ async def delete_product(product_id: uuid.UUID, username=Depends(auth_wrapper)):
 async def get_offers(
     product_id: uuid.UUID,
 ) -> list[OfferModel]:
+    """
+    Get all offers for a particular product from the database.
+
+    Args:
+        product_id (uuid.UUID): The ID of the product for which to fetch the offers.
+
+    Raises:
+        HTTPException: If the product is not found, no offers are found for it, or if an unexpected error occurs during the operation.
+
+    Returns:
+        list[OfferModel]: A list of offer model objects for the product.
+    """
+
     logger.debug(f"Getting offers for product {product_id}")
     try:
         with session_scope() as session:
