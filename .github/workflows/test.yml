@@ -8,7 +8,7 @@ jobs:
     test:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@
+            - uses: actions/checkout@v3
 
             - uses: actions/setup-python@v4
               with:
@@ -16,10 +16,6 @@ jobs:
 
             - name: Install poetry
               uses: abatilo/actions-poetry@v2
-            - name: Setup a local virtual environment (if no poetry.toml file)
-              run: |
-                  poetry config virtualenvs.create true --local
-                  poetry config virtualenvs.in-project true --local
             - uses: actions/cache@v3
               name: Define a cache for the virtual environment based on the dependencies lock file
               with:
