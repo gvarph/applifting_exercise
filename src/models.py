@@ -6,6 +6,8 @@ from sqlalchemy import Column, Float, Integer, String, ForeignKey, Table
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declarative_base, relationship, Relationship
 
+from .env import TEST_ENV
+
 from . import db
 from .errors import EntityNotFound
 from .logger import get_logger
@@ -98,7 +100,8 @@ Fetch.offers: Relationship[List[Offer]] = relationship(
 )
 
 
-Base.metadata.create_all(db.engine)
+if not TEST_ENV:
+    Base.metadata.create_all(db.engine)
 
 
 def link_offer_to_fetch(offer: Offer, fetch: Offer, session: db.Session):

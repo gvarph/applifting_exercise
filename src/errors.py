@@ -52,3 +52,11 @@ class InvalidCredentialsException(Exception):
     def __init__(self, message="Invalid credentials"):
         self.message = message
         super().__init__(self.message)
+
+
+class EnvironmentVariableNotSet(Exception):
+    """Exception raised for errors caused by missing environment variables"""
+
+    def __init__(self, message="Environment variable not set"):
+        self.message = message
+        super().__init__(self.message)
