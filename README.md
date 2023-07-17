@@ -58,18 +58,19 @@ Not sure if this is necessary, will update later.
 ---------- coverage: platform linux, python 3.10.12-final-0 ----------
 Name                      Stmts   Miss Branch BrPart  Cover
 -----------------------------------------------------------
+src/__init__.py               0      0      0      0   100%
 src/auth.py                  31     31      2      0     0%
 src/background.py            28     28      6      0     0%
 src/db.py                    20      0      0      0   100%
-src/env.py                   20      3      6      3    77%
-src/errors.py                28      8      0      0    71%
+src/env.py                   19      1      2      1    90%
+src/errors.py                43      6      0      0    86%
 src/logger.py                11      0      0      0   100%
 src/main.py                  18     18      0      0     0%
-src/models.py                56      1     10      0    98%
+src/models.py                80     11     18      1    82%
 src/offers.py               147     92     44      2    32%
-src/schemas.py               41      2      0      0    95%
-src/services/product.py      72     48     34      0    26%
+src/schemas.py               56      6      0      0    89%
+src/services/product.py      89     65     44      0    21%
 src/util.py                  15     15      0      0     0%
 -----------------------------------------------------------
-TOTAL                       487    246    102      5    45%
+TOTAL                       557    273    116      4    45%
 ```
