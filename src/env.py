@@ -10,35 +10,26 @@ CI = os.getenv("CI", False)
 
 TEST_ENV = CI or os.getenv("TEST_ENV", False)
 
-DATABASE_URL_UNCHECKED = os.getenv("DATABASE_URL")
-if not DATABASE_URL_UNCHECKED:
-    raise Exception("DATABASE_URL is not set")
-DATABASE_URL = DATABASE_URL_UNCHECKED
+_DATABASE_URL = os.getenv("DATABASE_URL")
+_TOKEN_SECRET = os.getenv("TOKEN_SECRET")
 
+_JWT_SECRET = os.getenv("JWT_SECRET")
 
-TOKEN_SECRET_UNCHECKED: str | None = os.getenv("TOKEN_SECRET")
+if not _TOKEN_SECRET:
+    raise EnvironmentVariableNotSet("TOKEN_SECRET is not set")
+TOKEN_SECRET = _TOKEN_SECRET
 
+if not _JWT_SECRET:
+    raise EnvironmentVariableNotSet("JWT_SECRET is not set")
+JWT_SECRET = _JWT_SECRET
 
-API_URL = os.getenv("API_URL", "https://python.exercise.applifting.cz/api/v1")
+if not _DATABASE_URL:
+    raise EnvironmentVariableNotSet("DATABASE_URL is not set")
+DATABASE_URL = _DATABASE_URL
 
+# if we are in a test environment, we should be getting the values from pytest.ini
 
-JWT_SECRET_UNCHEKCED = os.getenv("JWT_SECRET")
-
-if CI:
-    TOKEN_SECRET = "sample_token_secret"
-    DATABASE_URL = None
-else:
-    if not TOKEN_SECRET_UNCHECKED:
-        raise EnvironmentVariableNotSet("TOKEN_SECRET is not set")
-
-    if not JWT_SECRET_UNCHEKCED:
-        raise EnvironmentVariableNotSet("JWT_SECRET is not set")
-
-    TOKEN_SECRET = TOKEN_SECRET_UNCHECKED
-
-    JWT_SECRET = JWT_SECRET_UNCHEKCED
-
-
+API_URL: str = os.getenv("API_URL", "https://python.exercise.applifting.cz/api/v1")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 JWT_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_TOKEN_EXPIRE_MINUTES", 30))
 
