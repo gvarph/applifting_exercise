@@ -59,6 +59,7 @@ def _is_token_valid(token: JwtToken) -> bool:
     )
 
 
+#
 async def _fetch_new_token_from_api() -> str:
     """
     Fetch a new JWT token from the API.
@@ -147,6 +148,9 @@ async def _store_new_token_in_db(
     Returns:
         Optional[JwtToken]: Returns the JWT token stored or updated in the database or None if the operation was not successful.
     """
+
+    # If we wanted to horizontally scale this part of the application, it would be better to slightly modify the database entry in the database to allow for storage of multiple tokens, each for a different instance of the application.
+
     try:
         existing_token = session.query(JwtToken).first()
         if existing_token:
