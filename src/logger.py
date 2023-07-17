@@ -5,7 +5,15 @@ from colorlog import ColoredFormatter
 
 
 def get_logger(name: str) -> logging.Logger:
-    """Returns a logger with the given name"""
+    """
+    Creates and returns a logger with the given name.
+
+    The logger will have a level set as defined in the LOG_LEVEL environment variable and
+    will have a console handler that outputs colored logs.
+
+    :param name: The name of the logger.
+    :return: A logger with the given name, a set level, and a console handler.
+    """
     logger = logging.getLogger(name)
     logger.setLevel(LOG_LEVEL)
 
