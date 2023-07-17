@@ -3,7 +3,7 @@ import uuid
 
 from pydantic import BaseModel
 
-from .models import Offer, Product
+from .models import Offer, OfferSummary, Product
 from .logger import get_logger
 
 logger = get_logger(__name__)
@@ -80,3 +80,14 @@ class OfferPriceSummary(BaseModel):
     avg: float
     median: float
     count: int
+
+    @staticmethod
+    def from_model(model: OfferSummary):
+        return OfferPriceSummary(
+            time=model.fetch.time,
+            min=model.min_price,
+            max=model.max_price,
+            avg=model.avg_price,
+            median=model.median_price,
+            count=model.count,
+        )

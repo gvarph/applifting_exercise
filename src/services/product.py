@@ -1,21 +1,16 @@
-from ast import Tuple
 from typing import List
 import uuid
 
-from fastapi import HTTPException, APIRouter
+from fastapi import APIRouter
 
+from src.env import PERIODIC_FETCH_INTERVAL
 
 from ..db import session_scope
-from ..errors import ApiRequestError, AuthenticationFailedError, EntityNotFound
-from ..models import (
-    Fetch,
-    Offer,
-    Product,
-    offer_fetch,
-)
+from ..models import Fetch, Offer, OfferSummary, Product
 from ..schemas import CreateProductModel, OfferModel, OfferPriceSummary, ProductModel
 from ..offers import fetch_products, register_product
 from ..logger import get_logger
+from ..errors import CustomException, EntityNotFound, ProductRegistrationError
 
 logger = get_logger(__name__)
 
@@ -32,20 +27,19 @@ class ProductService:
 
     async def create_product(self, data: CreateProductModel) -> ProductModel:
         if not data.name or not data.description:
-            raise HTTPException(status_code=400, detail="Invalid product")
+            raise CustomException(message="Invalid product")
         with session_scope() as session:
-            # create product
             db_product: Product = Product(name=data.name, description=data.description)
-
-            # persist product
             session.add(db_product)
             session.commit()
 
             session.refresh(db_product)
 
-            await register_product(db_product, session)
+            try:
+                await register_product(db_product, session)
+            except Exception:
+                raise ProductRegistrationError(message="Product registration failed")
 
-            # fetch offers for the first time
             await fetch_products(db_product, session)
 
             product_model = ProductModel.from_product(db_product)
@@ -67,48 +61,39 @@ class ProductService:
             db_product = session.query(Product).filter(Product.id == product_id).first()
 
             if not db_product:
-                raise EntityNotFound("Product not found")
+                raise EntityNotFound(message="Product not found")
 
         return db_product
 
-    async def delete_product(product_id: uuid.UUID):
+    async def delete_product(self, product_id: uuid.UUID):
         with session_scope() as session:
             delete_stmt = (
                 session.query(Product).filter(Product.id == product_id).delete()
             )
 
             if not delete_stmt:
-                raise HTTPException(status_code=404, detail="Product not found")
+                raise EntityNotFound(message="Product not found")
+
             session.commit()
-            # TODO: delete product in offers service?
         return
 
-    async def get_offers(
-        self,
-        product_id: uuid.UUID,
-    ) -> list[OfferModel]:
+    async def get_offers(self, product_id: uuid.UUID) -> list[OfferModel]:
         with session_scope() as session:
-            product: Product | None = (
-                session.query(Product).filter(Product.id == product_id).first()
-            )
+            product = session.query(Product).filter(Product.id == product_id).first()
             if not product:
-                raise HTTPException(status_code=404, detail="Product not found")
+                raise EntityNotFound(message="Product not found")
 
-            last_fetch_of_product: Fetch | None = (
+            last_fetch_of_product = (
                 session.query(Fetch)
-                .where(Fetch.product_id == product_id)
+                .filter(Fetch.product_id == product_id)
                 .order_by(Fetch.time.desc())
                 .first()
             )
 
             if not last_fetch_of_product:
-                # We know the product exists, but there are no offers for it
-                raise HTTPException(status_code=404, detail="No offers found")
+                raise CustomException(message="No offers found")
 
-            fetches_on_product = product.fetches
-
-            # get fetch with highest time
-            last_fetch = max(fetches_on_product, key=lambda f: f.time)
+            last_fetch = max(product.fetches, key=lambda f: f.time)
 
             offers: List[Offer] = last_fetch.offers
 
@@ -122,7 +107,7 @@ class ProductService:
         with session_scope() as session:
             product = session.query(Product).filter(Product.id == product_id).first()
             if not product:
-                raise EntityNotFound("Product not found")
+                raise EntityNotFound(message="Product not found")
 
             fetches = (
                 session.query(Fetch)
@@ -133,21 +118,40 @@ class ProductService:
                 .all()
             )
 
-            calculated_prices: List[OfferPriceSummary] = []
-            for fetch in fetches:
-                offers = fetch.offers
-
-                prices = [offer.price for offer in offers]
-
-                summary = OfferPriceSummary(
-                    time=fetch.time,
-                    min=min(prices),
-                    max=max(prices),
-                    avg=sum(prices) / len(prices),
-                    median=prices[len(prices) // 2],
-                    count=len(prices),
-                )
-
-                calculated_prices.append(summary)
+            calculated_prices = [
+                OfferPriceSummary.from_model(fetch.calculate_summary())
+                for fetch in fetches
+            ]
 
             return calculated_prices
+
+    async def get_price_change(
+        self, product_id: str, from_time: float, to_time: float
+    ) -> list[OfferPriceSummary]:
+        with session_scope() as session:
+            product = session.query(Product).filter(Product.id == product_id).first()
+            if not product:
+                raise EntityNotFound(message="Product not found")
+
+            # Get the last fetch before the from_time
+            last_fetch_before_from_time = (
+                session.query(Fetch)
+                .filter(Fetch.product_id == product_id)
+                .filter(Fetch.time <= from_time)
+                .order_by(Fetch.time.desc())
+                .first()
+            )
+
+            # throw error if no fetch before from_time
+            if not last_fetch_before_from_time:
+                raise CustomException(message="No fetch before the specified time")
+
+            # Get the last fetch before the to_time
+
+            last_fetch_before_to_time = (
+                session.query(Fetch)
+                .filter(Fetch.product_id == product_id)
+                .filter(Fetch.time <= to_time)
+                .order_by(Fetch.time.desc())
+                .first()
+            )

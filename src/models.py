@@ -53,14 +53,52 @@ class Offer(Base):
         return f"<Offer(id={self.id}, price={self.price}, items_in_stock={self.items_in_stock})>"
 
 
+class OfferSummary(Base):
+    __tablename__ = "offer_summary"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    min_price = Column(Float)
+    max_price = Column(Float)
+    avg_price = Column(Float)
+    median_price = Column(Float)
+
+
 @dataclass
 class Fetch(Base):
     __tablename__ = "fetch"
-
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     time = Column(Float)
-
     product_id = Column(UUID, ForeignKey("products.id"))
+
+    offer_summary_id = Column(
+        UUID, ForeignKey("offer_summary.id"), nullable=True
+    )  # Optional
+    offer_summary = relationship("OfferSummary", backref="fetch")
+
+    def calculate_summary(self) -> OfferSummary | None:
+        # if the summary is already calculated, return
+        if self.offer_summary:
+            summary: OfferSummary = self.offer_summary
+
+            return summary
+
+        # if there are no offers or it is a empty list, return
+        if not self.offers or len(self.offers) == 0:
+            return None
+
+        prices: List[int] = [offer.price for offer in self.offers]
+
+        summary = OfferSummary(
+            min=min(prices),
+            max=max(prices),
+            avg=sum(prices) / len(prices),
+            median=prices[len(prices) // 2],
+            count=len(prices),
+        )
+
+        # add the summary to the fetch
+        self.offer_summary = summary
+
+        return summary
 
 
 @dataclass

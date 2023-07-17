@@ -25,6 +25,7 @@ fake_users_db = {
     "johndoe": hash_password("JonhDoe123"),
     "alice": hash_password("Alice123"),
     "bob": hash_password("Bob123"),
+    "string": hash_password("string"),
 }
 
 
