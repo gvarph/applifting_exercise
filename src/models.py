@@ -34,8 +34,8 @@ class JwtToken(Base):
 offer_fetch = Table(
     "offer_fetch",
     Base.metadata,
-    Column("offer_id", UUID, ForeignKey("offers.id")),
-    Column("fetch_id", UUID, ForeignKey("fetch.id")),
+    Column("offer_id", UUID, ForeignKey("offers.id", ondelete="CASCADE")),
+    Column("fetch_id", UUID, ForeignKey("fetch.id", ondelete="CASCADE")),
     Column("id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
 )
 
@@ -47,7 +47,8 @@ class Offer(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     price = Column(Integer)
     items_in_stock = Column(Integer)
-    product_id = Column(UUID, ForeignKey("products.id"))
+    product_id = Column(UUID, ForeignKey("products.id", ondelete="CASCADE"))
+    fetches = relationship("Fetch", secondary=offer_fetch, back_populates="offers")
 
     def __repr__(self):
         return f"<Offer(id={self.id}, price={self.price}, items_in_stock={self.items_in_stock})>"
@@ -70,7 +71,7 @@ class Fetch(Base):
     __tablename__ = "fetch"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     time = Column(Float)
-    product_id = Column(UUID, ForeignKey("products.id"))
+    product_id = Column(UUID, ForeignKey("products.id", ondelete="CASCADE"))
 
     offer_summary_id = Column(
         UUID, ForeignKey("offer_summary.id"), nullable=True
@@ -119,10 +120,10 @@ class Product(Base):
     description = Column(String)
 
     offers: Relationship[List[Offer]] = relationship(
-        "Offer", back_populates="product", cascade="all, delete"
+        "Offer", back_populates="product", cascade="all, delete-orphan"
     )
     fetches: Relationship[List[Fetch]] = relationship(
-        "Fetch", back_populates="product", cascade="all, delete"
+        "Fetch", back_populates="product", cascade="all, delete-orphan"
     )
 
     def __repr__(self):
@@ -143,7 +144,7 @@ Offer.product: Relationship[Product] = relationship("Product", back_populates="o
 Fetch.product: Relationship[Product] = relationship("Product", back_populates="fetches")
 
 Fetch.offers: Relationship[List[Offer]] = relationship(
-    "Offer", secondary=offer_fetch, cascade="all, delete"
+    "Offer", secondary=offer_fetch, back_populates="fetches"
 )
 
 

@@ -5,7 +5,7 @@ from fastapi import APIRouter
 
 
 from ..db import session_scope
-from ..models import Fetch, Offer, Product
+from ..models import Fetch, Offer, Product, offer_fetch
 from ..schemas import (
     CreateProductModel,
     OfferModel,
@@ -72,6 +72,24 @@ class ProductService:
 
     async def delete_product(self, product_id: uuid.UUID):
         with session_scope() as session:
+            # Find fetches for the product
+            fetches = session.query(Fetch).filter(Fetch.product_id == product_id).all()
+
+            # Delete offer-fetch associations for these fetches
+            for fetch in fetches:
+                for offer in fetch.offers:
+                    session.execute(
+                        offer_fetch.delete().where(
+                            (offer_fetch.c.fetch_id == fetch.id)
+                            & (offer_fetch.c.offer_id == offer.id)
+                        )
+                    )
+
+            # Now you can safely delete the fetches
+            session.query(Fetch).filter(Fetch.product_id == product_id).delete()
+
+            session.commit()
+
             delete_stmt = (
                 session.query(Product).filter(Product.id == product_id).delete()
             )
