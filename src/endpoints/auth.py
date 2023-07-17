@@ -1,8 +1,9 @@
-from fastapi import HTTPException
 from fastapi.routing import APIRouter
 
+from ..errors import InvalidLogin
+
 from ..logger import get_logger
-from ..auth import create_token, fake_users_db, hash_password, validate_password
+from ..auth import create_token, fake_users_db, validate_password
 from ..schemas import AuthModel
 
 
@@ -11,6 +12,7 @@ router = APIRouter()
 logger = get_logger(__name__)
 
 # This could done better (mainly using an DB instead of a dict), but it's not the focus of this project as the auth was a bonus task.
+# It would also be smart to add ad something like a option to register in the application, or something more complex like token refresh.
 
 
 @router.post("/token")
@@ -25,20 +27,15 @@ def login(authData: AuthModel) -> dict[str, str]:
     - dict[str, str]: A dictionary containing the generated access `token`.
 
     Raises:
-    - HTTPException(401): If the provided username or password is invalid.
+    - InvalidLogin: If the user is not found or the password is invalid.
     """
 
-    if authData.username not in fake_users_db:
-        raise HTTPException(status_code=401, detail="Invalid username")
-
-    if not validate_password(authData.password, fake_users_db[authData.username]):
-        logger.debug(
-            f"Invalid password for user {authData.username}\n{authData.password=}->{hash_password(authData.password)=}\n{fake_users_db[authData.username]=}"
-        )
-
-        raise HTTPException(status_code=401, detail="Invalid password")
+    if authData.username not in fake_users_db or not validate_password(
+        authData.password, fake_users_db[authData.username]
+    ):
+        raise InvalidLogin(f"User does not exist or the password is invalid")
 
     token: str = create_token(authData.username)
-    logger.debug(f"Token created for user {authData.username}\n{token=}")
+    logger.debug(f"Token created for user {authData.username}")
 
     return {"token": token}

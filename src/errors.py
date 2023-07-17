@@ -60,3 +60,11 @@ class EnvironmentVariableNotSet(Exception):
     def __init__(self, message="Environment variable not set"):
         self.message = message
         super().__init__(self.message)
+
+
+class InvalidLogin(Exception):
+    """Exception raised for errors caused by failed login"""
+
+    def __init__(self, message="Login failed"):
+        self.message = message
+        super().__init__(self.message)
