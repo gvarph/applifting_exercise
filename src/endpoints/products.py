@@ -1,31 +1,23 @@
 import uuid
 
-from fastapi import APIRouter, Depends
-from fastapi.params import Query
-
-from ..util import time_coro, time_func
-
-from ..services.product import ProductService
-
+from fastapi import APIRouter, Depends, Query
 
 from ..auth import auth_wrapper
-
 from ..schemas import (
     CreateProductModel,
     OfferModel,
     OfferPriceSummary,
     ProductModel,
 )
+from ..services.product import ProductService
 from ..logger import get_logger
 
 logger = get_logger(__name__)
-
 router = APIRouter()
 
-from fastapi import Depends
 
-
-# unnecessary dependency injection
+# unnecessary dependency injection. I've left it here to show that I know how to use it.
+# It could have been useful for testing if these functions were complex enough to require mocking.
 def get_product_service() -> ProductService:
     return ProductService()
 
