@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 
+from src.background import OfferWorker
+
 from .middleware.exception import ExceptionMiddleware
 
 
@@ -17,3 +19,13 @@ def start_app() -> FastAPI:
 
 
 app = start_app()
+
+
+@app.on_event("startup")
+async def startup_event():
+    OfferWorker.start()
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    OfferWorker.stop()

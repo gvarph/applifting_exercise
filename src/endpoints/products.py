@@ -6,6 +6,7 @@ from ..auth import auth_wrapper
 from ..schemas import (
     CreateProductModel,
     OfferModel,
+    OfferPriceDiff,
     OfferPriceSummary,
     ProductModel,
 )
@@ -141,7 +142,9 @@ async def get_price_history(
 
     Args:
         product_id (uuid.UUID): The ID of the product for which to fetch the price history.
-        range (TimeRange): The time range for which to fetch the price history in unix epoch time.
+        from_time (int): The start of the time range for which to fetch the price history in unix epoch time.
+        to_time (int): The end of the time range for which to fetch the price history in unix epoch time.
+
     Returns:
         list[OfferPriceSummary]: A list of offer price summary objects for the product.
     """
@@ -150,3 +153,37 @@ async def get_price_history(
     # x = await time_coro(service.get_price_history, product_id, from_time, to_time)
 
     return await service.get_price_history(product_id, from_time, to_time)
+
+
+@router.get(
+    "/products/{product_id}/price-diff",
+    status_code=200,
+    response_model=OfferPriceDiff,
+)
+async def get_price_diff(
+    product_id: uuid.UUID,
+    from_time: int = Query(...),
+    to_time: int = Query(...),
+    service: ProductService = Depends(get_product_service),
+) -> OfferPriceDiff:
+    """
+    Get the price history for a particular product from the database.
+
+    Args:
+        product_id (uuid.UUID): The ID of the product for which to fetch the price history.
+
+        from_time (int): The start of the time range for which to fetch the price history in unix epoch time.
+        to_time (int): The end of the time range for which to fetch the price history in unix epoch time.
+
+    Returns:
+        OfferPriceDiff: The procentual price differences between the first and last offers in the time range
+    """
+    logger.info(f"Getting price history for product {product_id}")
+
+    # x = await time_coro(service.get_price_history, product_id, from_time, to_time)
+
+    x: OfferPriceDiff = await service.get_price_change(product_id, from_time, to_time)
+
+    logger.info(f"Got price difference for product {product_id}: {x}")
+
+    return x

@@ -60,6 +60,9 @@ class OfferSummary(Base):
     max_price = Column(Float)
     avg_price = Column(Float)
     median_price = Column(Float)
+    offer_count = Column(Integer)
+
+    fetch = relationship("Fetch", back_populates="offer_summary", uselist=False)
 
 
 @dataclass
@@ -72,9 +75,9 @@ class Fetch(Base):
     offer_summary_id = Column(
         UUID, ForeignKey("offer_summary.id"), nullable=True
     )  # Optional
-    offer_summary = relationship("OfferSummary", backref="fetch")
+    offer_summary = relationship("OfferSummary", back_populates="fetch")
 
-    def calculate_summary(self) -> OfferSummary | None:
+    def calculate_summary(self) -> OfferSummary:
         # if the summary is already calculated, return
         if self.offer_summary:
             summary: OfferSummary = self.offer_summary
@@ -83,16 +86,22 @@ class Fetch(Base):
 
         # if there are no offers or it is a empty list, return
         if not self.offers or len(self.offers) == 0:
-            return None
+            OfferSummary(
+                min_price=0,
+                max_price=0,
+                avg_price=0,
+                median_price=0,
+                offer_count=0,
+            )
 
         prices: List[int] = [offer.price for offer in self.offers]
 
         summary = OfferSummary(
-            min=min(prices),
-            max=max(prices),
-            avg=sum(prices) / len(prices),
-            median=prices[len(prices) // 2],
-            count=len(prices),
+            min_price=min(prices),
+            max_price=max(prices),
+            avg_price=sum(prices) / len(prices),
+            median_price=prices[len(prices) // 2],
+            offer_count=len(prices),
         )
 
         # add the summary to the fetch

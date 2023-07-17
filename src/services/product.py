@@ -3,11 +3,16 @@ import uuid
 
 from fastapi import APIRouter
 
-from src.env import PERIODIC_FETCH_INTERVAL
 
 from ..db import session_scope
-from ..models import Fetch, Offer, OfferSummary, Product
-from ..schemas import CreateProductModel, OfferModel, OfferPriceSummary, ProductModel
+from ..models import Fetch, Offer, Product
+from ..schemas import (
+    CreateProductModel,
+    OfferModel,
+    OfferPriceDiff,
+    OfferPriceSummary,
+    ProductModel,
+)
 from ..offers import fetch_products, register_product
 from ..logger import get_logger
 from ..errors import CustomException, EntityNotFound, ProductRegistrationError
@@ -127,7 +132,7 @@ class ProductService:
 
     async def get_price_change(
         self, product_id: str, from_time: float, to_time: float
-    ) -> list[OfferPriceSummary]:
+    ) -> OfferPriceDiff:
         with session_scope() as session:
             product = session.query(Product).filter(Product.id == product_id).first()
             if not product:
@@ -155,3 +160,13 @@ class ProductService:
                 .order_by(Fetch.time.desc())
                 .first()
             )
+
+            # throw error if the last fetch before to_time is the same as the last fetch before from_time
+            if last_fetch_before_from_time.id == last_fetch_before_to_time.id:
+                raise CustomException(message="No fetch before the specified time")
+
+            # Get the offer summaries for for both fetches
+            start_summary = last_fetch_before_from_time.calculate_summary()
+            end_summary = last_fetch_before_to_time.calculate_summary()
+
+            return OfferPriceDiff.calculate(start_summary, end_summary)

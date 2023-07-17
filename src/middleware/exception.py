@@ -25,4 +25,5 @@ class ExceptionMiddleware(BaseHTTPMiddleware):
             response = JSONResponse(
                 {"detail": "An unexpected error occurred"}, status_code=500
             )
+            raise e
         return response

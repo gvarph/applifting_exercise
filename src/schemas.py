@@ -89,5 +89,34 @@ class OfferPriceSummary(BaseModel):
             max=model.max_price,
             avg=model.avg_price,
             median=model.median_price,
-            count=model.count,
+            count=model.offer_count,
         )
+
+
+class OfferPriceDiff(BaseModel):
+    """
+    Represents the percentage difference between prices for two different OfferSummaries
+    """
+
+    min: float
+    max: float
+    avg: float
+    median: float
+
+    @staticmethod
+    def calculate(start: OfferSummary, end: OfferSummary) -> "OfferPriceDiff":
+        """
+        Calculate the percentage difference between two OfferSummaries
+        """
+        return OfferPriceDiff(
+            min=(end.min_price - start.min_price) / start.min_price,
+            max=(end.max_price - start.max_price) / start.max_price,
+            avg=(end.avg_price - start.avg_price) / start.avg_price,
+            median=(end.median_price - start.median_price) / start.median_price,
+        )
+
+    def __repr__(self):
+        return f"OfferPriceDiff(min={self.min}, max={self.max}, avg={self.avg}, median={self.median})"
+
+    def __str__(self):
+        return self.__repr__()

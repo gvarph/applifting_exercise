@@ -5,7 +5,6 @@ from .db import session_scope
 import src.env as env
 from .logger import get_logger
 from .offers import fetch_products
-from .main import app
 
 
 logger = get_logger(__name__)
@@ -65,13 +64,3 @@ class OfferWorker:
 
             await asyncio.sleep(env.PERIODIC_FETCH_INTERVAL)
         logger.debug("Stopping periodic fetch")
-
-
-@app.on_event("startup")
-async def startup_event():
-    OfferWorker.start()
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    OfferWorker.stop()
