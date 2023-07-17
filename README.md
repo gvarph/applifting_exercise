@@ -50,27 +50,73 @@ It is also possible to edit the environment variables, port or database or event
 
 ### On your local machine
 
-Not sure if this is necessary, will update later.
+#### Prerequisites
+
+-   A PostgreSQL database running somewhere. Here is a [guide](https://www.postgresql.org/docs/current/tutorial-start.html) on how to install and run PostgreSQL on your machine.
+-   Python 3.10 (Download and install from [here](https://www.python.org/downloads/))
+-   Poetry (Download and install from [here](https://python-poetry.org/docs/#installation))
+-   psycopg2 (For example, on Ubuntu you need to install PostgreSQL development package: `sudo apt-get install libpq-dev`)
+
+#### Steps
+
+1. Clone the repository.
+
+```bash
+git clone https://github.com/gvarph/applifting_exercise.git
+cd applifting_exercise
+```
+
+2. Install the dependencies.
+
+```bash
+poetry install --only main
+```
+
+The `--only main` flag is used to only install the dependencies needed for the main application. If you want to work on this project, you can remove this flag to install the development dependencies as well.
+
+3. Create a `.env` based on the `.env.template` file.
+
+4. Edit the `.env` file.
+
+5. Run the application.
+
+## How to use the application
+
+This application is a REST API JSON microservice for browsing a product catalog and automatically updating prices from a offer service. The offer
+You can find see the documentation of the API on the `/docs` endpoint when you run the application.
+
+```bash
+poetry run uvicorn src.main:app
+```
 
 ## Coverage:
 
-```
+````
+
 ---------- coverage: platform linux, python 3.10.12-final-0 ----------
-Name                      Stmts   Miss Branch BrPart  Cover
------------------------------------------------------------
-src/__init__.py               0      0      0      0   100%
-src/auth.py                  31     31      2      0     0%
-src/background.py            28     28      6      0     0%
-src/db.py                    20      0      0      0   100%
-src/env.py                   19      1      2      1    90%
-src/errors.py                43      6      0      0    86%
-src/logger.py                11      0      0      0   100%
-src/main.py                  18     18      0      0     0%
-src/models.py                80     11     18      1    82%
-src/offers.py               147     92     44      2    32%
-src/schemas.py               56      6      0      0    89%
-src/services/product.py      89     65     44      0    21%
-src/util.py                  15     15      0      0     0%
------------------------------------------------------------
-TOTAL                       557    273    116      4    45%
+Name Stmts Miss Branch BrPart Cover
+
+---
+
+src/**init**.py 0 0 0 0 100%
+src/auth.py 31 31 2 0 0%
+src/background.py 28 28 6 0 0%
+src/db.py 20 0 0 0 100%
+src/env.py 19 1 2 1 90%
+src/errors.py 43 6 0 0 86%
+src/logger.py 11 0 0 0 100%
+src/main.py 18 18 0 0 0%
+src/models.py 80 11 18 1 82%
+src/offers.py 147 92 44 2 32%
+src/schemas.py 56 6 0 0 89%
+src/services/product.py 89 65 44 0 21%
+src/util.py 15 15 0 0 0%
+
+---
+
+TOTAL 557 273 116 4 45%
+
 ```
+
+```
+````
