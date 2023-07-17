@@ -10,6 +10,8 @@ router = APIRouter()
 
 logger = get_logger(__name__)
 
+# This could done better (mainly using an DB instead of a dict), but it's not the focus of this project as the auth was a bonus task.
+
 
 @router.post("/token")
 def login(authData: AuthModel) -> dict[str, str]:
