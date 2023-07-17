@@ -52,7 +52,7 @@ class ProductService:
         return product_model
 
     async def update_product(
-        self, product_id: uuid.UUID, new_product: ProductModel
+        self, product_id: uuid.UUID, new_product: CreateProductModel
     ) -> ProductModel:
         with session_scope() as session:
             session.query(Product).filter(Product.id == product_id).update(
@@ -68,7 +68,8 @@ class ProductService:
             if not db_product:
                 raise EntityNotFound(message="Product not found")
 
-        return db_product
+            product_model = ProductModel.from_product(db_product)
+        return product_model
 
     async def delete_product(self, product_id: uuid.UUID):
         with session_scope() as session:

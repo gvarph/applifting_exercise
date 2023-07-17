@@ -62,7 +62,7 @@ async def create_product(
 @router.put("/products/{product_id}", status_code=200)
 async def update_product(
     product_id: uuid.UUID,
-    new_product: ProductModel,
+    new_product: CreateProductModel,
     username=Depends(auth_wrapper),
     service: ProductService = Depends(get_product_service),
 ) -> ProductModel:
@@ -71,7 +71,7 @@ async def update_product(
 
     Parameters:
     - product_id (uuid.UUID): ID of the product to update.
-    - new_product (ProductModel): New data for the product.
+    - new_product (CreateProductModel): New data of the product.
 
     Returns:
     - ProductModel: The updated product.
