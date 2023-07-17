@@ -28,13 +28,11 @@ async def read_products(
     service: ProductService = Depends(get_product_service),
 ) -> list[ProductModel]:
     """
-    Read all products from the database and returns them as ProductModels.
-
-    Raises:
-        HTTPException: if an unexpected error occurs during the operation.
+    Get all products from the database.
 
     Returns:
-        list[ProductModel]: A list of product model objects.
+    - list[ProductModel]: List of all products.
+
     """
     return await service.read_products()
 
@@ -46,18 +44,18 @@ async def create_product(
     service: ProductService = Depends(get_product_service),
 ) -> ProductModel:
     """
-    Create a new product and persists it in the database.
+    Create a new product and register it.
 
-    Args:
-        data (CreateProductModel): The model containing the details of the product to create.
-
-    Raises:
-        HTTPException: If the product details are invalid or if an unexpected error occurs during the operation.
+    Parameters:
+    - data (CreateProductModel): Data of the product to create.
 
     Returns:
-        ProductModel: The created product as a ProductModel object.
-    """
+    - ProductModel: The created product.
 
+    Raises:
+    - CustomException: If the product data is invalid.
+    - ProductRegistrationError: If the product registration failed.
+    """
     return await service.create_product(data)
 
 
@@ -69,17 +67,17 @@ async def update_product(
     service: ProductService = Depends(get_product_service),
 ) -> ProductModel:
     """
-    Update an existing product in the database.
+    Update an existing product.
 
-    Args:
-        product_id (uuid.UUID): The ID of the product to update.
-        new_product (ProductModel): The model containing the updated details of the product.
-
-    Raises:
-        HTTPException: If an unexpected error occurs during the operation.
+    Parameters:
+    - product_id (uuid.UUID): ID of the product to update.
+    - new_product (ProductModel): New data for the product.
 
     Returns:
-        ProductModel: The updated product as a ProductModel object.
+    - ProductModel: The updated product.
+
+    Raises:
+    - EntityNotFound: If the product does not exist.
     """
     return await service.update_product(product_id, new_product)
 
@@ -91,13 +89,13 @@ async def delete_product(
     service: ProductService = Depends(get_product_service),
 ):
     """
-    Delete a product from the database.
+    Delete a product.
 
-    Args:
-        product_id (uuid.UUID): The ID of the product to delete.
+    Parameters:
+    - product_id (uuid.UUID): ID of the product to delete.
 
     Raises:
-        HTTPException: If the product is not found or if an unexpected error occurs during the operation.
+    - EntityNotFound: If the product does not exist.
     """
 
     return await service.delete_product(product_id)
@@ -111,16 +109,17 @@ async def get_offers(
     service: ProductService = Depends(get_product_service),
 ) -> list[OfferModel]:
     """
-    Get all offers for a particular product from the database.
+    Get the offers for a product.
 
-    Args:
-        product_id (uuid.UUID): The ID of the product for which to fetch the offers.
-
-    Raises:
-        HTTPException: If the product is not found, no offers are found for it, or if an unexpected error occurs during the operation.
+    Parameters:
+    - product_id (uuid.UUID): ID of the product to get offers for.
 
     Returns:
-        list[OfferModel]: A list of offer model objects for the product.
+    - list[OfferModel]: List of offers for the product.
+
+    Raises:
+    - EntityNotFound: If the product does not exist.
+    - CustomException: If no offers are found.
     """
 
     return await service.get_offers(product_id)
@@ -138,15 +137,18 @@ async def get_price_history(
     service: ProductService = Depends(get_product_service),
 ) -> list[OfferPriceSummary]:
     """
-    Get the price history for a particular product from the database.
+    Get the price history of a product.
 
-    Args:
-        product_id (uuid.UUID): The ID of the product for which to fetch the price history.
-        from_time (int): The start of the time range for which to fetch the price history in unix epoch time.
-        to_time (int): The end of the time range for which to fetch the price history in unix epoch time.
+    Parameters:
+    - product_id (str): ID of the product to get price history for.
+    - from_time (float): Start time for the history.
+    - to_time (float): End time for the history.
 
     Returns:
-        list[OfferPriceSummary]: A list of offer price summary objects for the product.
+    - list[OfferPriceSummary]: List of price summaries for the product.
+
+    Raises:
+    - EntityNotFound: If the product does not exist.
     """
     logger.info(f"Getting price history for product {product_id}")
 
@@ -167,16 +169,19 @@ async def get_price_diff(
     service: ProductService = Depends(get_product_service),
 ) -> OfferPriceDiff:
     """
-    Get the price history for a particular product from the database.
+    Get the price change of a product within a time range.
 
-    Args:
-        product_id (uuid.UUID): The ID of the product for which to fetch the price history.
-
-        from_time (int): The start of the time range for which to fetch the price history in unix epoch time.
-        to_time (int): The end of the time range for which to fetch the price history in unix epoch time.
+    Parameters:
+    - product_id (str): ID of the product to get price change for.
+    - from_time (float): Start time for the change calculation.
+    - to_time (float): End time for the change calculation.
 
     Returns:
-        OfferPriceDiff: The procentual price differences between the first and last offers in the time range
+    - OfferPriceDiff: Difference in price.
+
+    Raises:
+    - EntityNotFound: If the product does not exist.
+    - CustomException: If there are no fetches before the specified times.
     """
     logger.info(f"Getting price history for product {product_id}")
 
