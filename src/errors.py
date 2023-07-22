@@ -94,3 +94,12 @@ class InvalidLogin(CustomException):
 
     def __init__(self, message="Login failed"):
         super().__init__(message)
+
+
+class InvalidTimeRangeError(CustomException):
+    """Exception raised for errors caused by invalid time range"""
+
+    response_code = 400
+
+    def __init__(self, message="Invalid time range"):
+        super().__init__(message)

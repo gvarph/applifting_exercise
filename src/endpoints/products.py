@@ -2,6 +2,8 @@ import uuid
 
 from fastapi import APIRouter, Depends, Query
 
+from src.errors import InvalidTimeRangeError
+
 from ..auth import auth_wrapper
 from ..schemas import (
     CreateProductModel,
@@ -40,7 +42,9 @@ async def read_products(
 @router.post("/products/", response_model=ProductModel, status_code=201)
 async def create_product(
     data: CreateProductModel,
-    username=Depends(auth_wrapper),
+    _=Depends(
+        auth_wrapper
+    ),  # we are not using the user object here, we are just checking that the user is authenticated
     service: ProductService = Depends(get_product_service),
 ) -> ProductModel:
     """
@@ -63,7 +67,7 @@ async def create_product(
 async def update_product(
     product_id: uuid.UUID,
     new_product: CreateProductModel,
-    username=Depends(auth_wrapper),
+    _=Depends(auth_wrapper),
     service: ProductService = Depends(get_product_service),
 ) -> ProductModel:
     """
@@ -85,7 +89,9 @@ async def update_product(
 @router.delete("/products/{product_id}", status_code=204)
 async def delete_product(
     product_id: uuid.UUID,
-    user=Depends(auth_wrapper),
+    _=Depends(
+        auth_wrapper
+    ),  # we are not using the user object here, we are just checking that the user is authenticated
     service: ProductService = Depends(get_product_service),
 ):
     """
@@ -150,9 +156,11 @@ async def get_price_history(
     Raises:
     - EntityNotFound: If the product does not exist.
     """
-    logger.info(f"Getting price history for product {product_id}")
 
-    # x = await time_coro(service.get_price_history, product_id, from_time, to_time)
+    if from_time > to_time:
+        raise InvalidTimeRangeError(
+            message="Start time cannot be greater than end time"
+        )
 
     return await service.get_price_history(product_id, from_time, to_time)
 
@@ -183,12 +191,10 @@ async def get_price_diff(
     - EntityNotFound: If the product does not exist.
     - CustomException: If there are no fetches before the specified times.
     """
-    logger.info(f"Getting price history for product {product_id}")
 
-    # x = await time_coro(service.get_price_history, product_id, from_time, to_time)
+    if from_time > to_time:
+        raise InvalidTimeRangeError(
+            message="Start time cannot be greater than end time"
+        )
 
-    x: OfferPriceDiff = await service.get_price_change(product_id, from_time, to_time)
-
-    logger.info(f"Got price difference for product {product_id}: {x}")
-
-    return x
+    return await service.get_price_change(product_id, from_time, to_time)
