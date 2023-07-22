@@ -5,8 +5,8 @@ from fastapi import APIRouter
 
 
 from ..db import session_scope
-from ..models import Fetch, Offer, Product, offer_fetch
-from ..schemas import (
+from ..orm_models import Fetch, Offer, Product, offer_fetch
+from ..pydantic_models import (
     CreateProductModel,
     OfferModel,
     OfferPriceDiff,

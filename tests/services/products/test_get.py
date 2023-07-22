@@ -5,7 +5,7 @@ import pytest
 
 from src.errors import ApiRequestError
 from src.services.product import ProductService
-from src.models import Product
+from src.orm_models import Product
 from src.logger import get_logger
 
 

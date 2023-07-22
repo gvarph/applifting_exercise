@@ -8,7 +8,7 @@ from src.offers import (
     _is_token_valid,
 )
 from src.errors import InvalidJwtTokenError
-from src.models import JwtToken
+from src.orm_models import JwtToken
 from tests.conftest import PAST, PRESENT, FUTURE
 
 

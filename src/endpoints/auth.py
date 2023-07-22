@@ -4,7 +4,7 @@ from ..errors import InvalidLogin
 
 from ..logger import get_logger
 from ..auth import create_token, fake_users_db, validate_password
-from ..schemas import AuthModel
+from ..pydantic_models import AuthModel
 
 
 router = APIRouter()

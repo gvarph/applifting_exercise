@@ -3,13 +3,13 @@ from uuid import uuid4
 
 import pytest
 
-from src.models import (
+from src.orm_models import (
     JwtToken,
     Product,
     link_offer_to_fetch,
 )
 
-from src.schemas import CreateProductModel, ProductModel
+from src.pydantic_models import CreateProductModel, ProductModel
 
 
 @pytest.fixture
@@ -71,7 +71,7 @@ def test_createModelProduct_toProduct():
 
 
 @patch("src.db.Session")
-@patch("src.models.Offer")
+@patch("src.orm_models.Offer")
 def test_link_offer_to_fetch_success(mock_offer, mock_session):
     mock_offer_instance = Mock()
     mock_fetch_instance = Mock()
@@ -86,7 +86,7 @@ def test_link_offer_to_fetch_success(mock_offer, mock_session):
 
 
 @patch("src.db.Session")
-@patch("src.models.Offer")
+@patch("src.orm_models.Offer")
 def test_link_offer_to_fetch_offer_not_found(mock_offer, mock_session):
     mock_fetch_instance = Mock()
     mock_offer.id = 1
@@ -99,7 +99,7 @@ def test_link_offer_to_fetch_offer_not_found(mock_offer, mock_session):
 
 
 @patch("src.db.Session")
-@patch("src.models.Offer")
+@patch("src.orm_models.Offer")
 def test_link_offer_to_fetch_fetch_not_found(mock_offer, mock_session):
     mock_offer_instance = Mock()
     mock_offer.id = 1

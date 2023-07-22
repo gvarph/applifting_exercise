@@ -17,8 +17,8 @@ from .errors import (
     OffersFetchError,
     ProductRegistrationError,
 )
-from .models import Fetch, JwtToken, Offer, Product
-from .schemas import OfferModel
+from .orm_models import Fetch, JwtToken, Offer, Product
+from .pydantic_models import OfferModel
 from .db import session_scope
 import src.env as env
 from .logger import get_logger

@@ -6,7 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from src.offers import (
     _fetch_token_from_db,
 )
-from src.models import JwtToken
+from src.orm_models import JwtToken
 from tests.conftest import FUTURE
 
 

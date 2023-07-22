@@ -5,14 +5,14 @@ from fastapi import APIRouter, Depends, Query
 from src.errors import InvalidTimeRangeError
 
 from ..auth import auth_wrapper
-from ..schemas import (
+from ..pydantic_models import (
     CreateProductModel,
     OfferModel,
     OfferPriceDiff,
     OfferPriceSummary,
     ProductModel,
 )
-from ..services.product import ProductService
+from ..services import ProductService
 from ..logger import get_logger
 
 logger = get_logger(__name__)
@@ -21,13 +21,13 @@ router = APIRouter()
 
 # unnecessary dependency injection. I've left it here to show that I know how to use it.
 # It could have been useful for testing if these functions were complex enough to require mocking.
-def get_product_service() -> ProductService:
+def _get_product_service() -> ProductService:
     return ProductService()
 
 
 @router.get("/products/", response_model=list[ProductModel], status_code=200)
 async def read_products(
-    service: ProductService = Depends(get_product_service),
+    service: ProductService = Depends(_get_product_service),
 ) -> list[ProductModel]:
     """
     Get all products from the database.
@@ -45,7 +45,7 @@ async def create_product(
     _=Depends(
         auth_wrapper
     ),  # we are not using the user object here, we are just checking that the user is authenticated
-    service: ProductService = Depends(get_product_service),
+    service: ProductService = Depends(_get_product_service),
 ) -> ProductModel:
     """
     Create a new product and register it.
@@ -68,7 +68,7 @@ async def update_product(
     product_id: uuid.UUID,
     new_product: CreateProductModel,
     _=Depends(auth_wrapper),
-    service: ProductService = Depends(get_product_service),
+    service: ProductService = Depends(_get_product_service),
 ) -> ProductModel:
     """
     Update an existing product.
@@ -92,7 +92,7 @@ async def delete_product(
     _=Depends(
         auth_wrapper
     ),  # we are not using the user object here, we are just checking that the user is authenticated
-    service: ProductService = Depends(get_product_service),
+    service: ProductService = Depends(_get_product_service),
 ):
     """
     Delete a product.
@@ -112,7 +112,7 @@ async def delete_product(
 )
 async def get_offers(
     product_id: uuid.UUID,
-    service: ProductService = Depends(get_product_service),
+    service: ProductService = Depends(_get_product_service),
 ) -> list[OfferModel]:
     """
     Get the offers for a product.
@@ -140,7 +140,7 @@ async def get_price_history(
     product_id: uuid.UUID,
     from_time: int = Query(...),
     to_time: int = Query(...),
-    service: ProductService = Depends(get_product_service),
+    service: ProductService = Depends(_get_product_service),
 ) -> list[OfferPriceSummary]:
     """
     Get the price history of a product.
@@ -172,7 +172,7 @@ async def get_price_diff(
     product_id: uuid.UUID,
     from_time: int = Query(...),
     to_time: int = Query(...),
-    service: ProductService = Depends(get_product_service),
+    service: ProductService = Depends(_get_product_service),
 ) -> OfferPriceDiff:
     """
     Get the price change of a product within a time range.

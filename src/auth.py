@@ -9,7 +9,7 @@ from passlib.hash import sha256_crypt
 
 from src.errors import JWTInvalidTokenError, JWTSignatureExpiredError
 
-from .schemas import TokenModel
+from .pydantic_models import TokenModel
 from .env import JWT_SECRET, ALGORITHM, JWT_TOKEN_EXPIRE_MINUTES
 from .logger import get_logger
 

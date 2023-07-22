@@ -1,6 +1,6 @@
 import asyncio
 
-from .models import Product
+from .orm_models import Product
 from .db import session_scope
 import src.env as env
 from .logger import get_logger
