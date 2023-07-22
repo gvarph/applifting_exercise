@@ -11,11 +11,10 @@
             "password": "MySecretPassword123docker"
         }
     ],
-    "python.testing.pytestArgs": [
-        "tests/"
-    ],
+    "python.testing.pytestArgs": ["tests/"],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "python.testing.cwd": "",
-    "python.analysis.diagnosticMode": "workspace"
+    "python.analysis.diagnosticMode": "workspace",
+    "python.analysis.typeCheckingMode": "off"
 }
