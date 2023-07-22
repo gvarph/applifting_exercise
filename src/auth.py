@@ -9,7 +9,7 @@ from passlib.hash import sha256_crypt
 
 from src.errors import JWTInvalidTokenError, JWTSignatureExpiredError
 
-from .pydantic_models import TokenModel
+from .pydantic_models import TokenData
 from .env import JWT_SECRET, ALGORITHM, JWT_TOKEN_EXPIRE_MINUTES
 from .logger import get_logger
 
@@ -43,11 +43,11 @@ def create_token(username: str) -> str:
     return token
 
 
-def parse_token(token: str) -> TokenModel:
+def parse_token(token: str) -> TokenData:
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
-        return TokenModel(username=username)
+        return TokenData(username=username)
     except jwt.ExpiredSignatureError as e:
         raise JWTSignatureExpiredError()
     except jwt.DecodeError as e:

@@ -69,10 +69,6 @@ class AuthModel(BaseModel):
     password: str
 
 
-class TokenModel(BaseModel):
-    username: Optional[str] = None
-
-
 class OfferPriceSummary(BaseModel):
     time: float
     min: float
@@ -120,3 +116,12 @@ class OfferPriceDiff(BaseModel):
 
     def __str__(self):
         return self.__repr__()
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: str | None = None
