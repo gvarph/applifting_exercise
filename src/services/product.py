@@ -43,7 +43,7 @@ class ProductService:
             try:
                 await register_product(db_product, session)
             except Exception:
-                raise ProductRegistrationError(message="Product registration failed")
+                raise ProductRegistrationError(detail="Product registration failed")
 
             await fetch_products(db_product, session)
 
@@ -66,7 +66,7 @@ class ProductService:
             db_product = session.query(Product).filter(Product.id == product_id).first()
 
             if not db_product:
-                raise EntityNotFound(message="Product not found")
+                raise EntityNotFound(detail="Product not found")
 
             product_model = ProductModel.from_product(db_product)
         return product_model
@@ -96,7 +96,7 @@ class ProductService:
             )
 
             if not delete_stmt:
-                raise EntityNotFound(message="Product not found")
+                raise EntityNotFound(detail="Product not found")
 
             session.commit()
         return
@@ -105,7 +105,7 @@ class ProductService:
         with session_scope() as session:
             product = session.query(Product).filter(Product.id == product_id).first()
             if not product:
-                raise EntityNotFound(message="Product not found")
+                raise EntityNotFound(detail="Product not found")
 
             last_fetch_of_product = (
                 session.query(Fetch)
@@ -131,7 +131,7 @@ class ProductService:
         with session_scope() as session:
             product = session.query(Product).filter(Product.id == product_id).first()
             if not product:
-                raise EntityNotFound(message="Product not found")
+                raise EntityNotFound(detail="Product not found")
 
             fetches = (
                 session.query(Fetch)
@@ -155,7 +155,7 @@ class ProductService:
         with session_scope() as session:
             product = session.query(Product).filter(Product.id == product_id).first()
             if not product:
-                raise EntityNotFound(message="Product not found")
+                raise EntityNotFound(detail="Product not found")
 
             # Get the last fetch before the from_time
             last_fetch_before_from_time = (

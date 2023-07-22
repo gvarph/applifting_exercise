@@ -158,5 +158,4 @@ def link_offer_to_fetch(offer: Offer, fetch: Offer, session: db.Session):
     if offer and fetch:
         fetch.offers.append(offer)
     else:
-        logger.debug("Offer or fetch not found")
         raise EntityNotFound("Offer or fetch not found")

@@ -129,10 +129,10 @@ def _decode_token(token: str):
 
     except InvalidTokenError as e:
         logger.error(f"JWT Token decoding failed: {str(e)}")
-        raise InvalidJwtTokenError(f"JWT Token decoding failed: {str(e)}") from e
+        raise InvalidJwtTokenError() from e
     except Exception as e:
         logger.error(f"JWT Token decoding failed: {str(e)}")
-        raise InvalidJwtTokenError(f"JWT Token decoding failed: {str(e)}") from e
+        raise InvalidJwtTokenError() from e
 
 
 async def _store_new_token_in_db(

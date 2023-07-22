@@ -158,9 +158,7 @@ async def get_price_history(
     """
 
     if from_time > to_time:
-        raise InvalidTimeRangeError(
-            message="Start time cannot be greater than end time"
-        )
+        raise InvalidTimeRangeError("Start time cannot be greater than end time")
 
     return await service.get_price_history(product_id, from_time, to_time)
 
@@ -193,8 +191,6 @@ async def get_price_diff(
     """
 
     if from_time > to_time:
-        raise InvalidTimeRangeError(
-            message="Start time cannot be greater than end time"
-        )
+        raise InvalidTimeRangeError("Start time cannot be greater than end time")
 
     return await service.get_price_change(product_id, from_time, to_time)

@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from fastapi import HTTPException
 from fastapi.params import Security
 from fastapi.security import (
     HTTPAuthorizationCredentials,
@@ -7,6 +6,8 @@ from fastapi.security import (
 )
 import jwt
 from passlib.hash import sha256_crypt
+
+from src.errors import JWTInvalidTokenError, JWTSignatureExpiredError
 
 from .schemas import TokenModel
 from .env import JWT_SECRET, ALGORITHM, JWT_TOKEN_EXPIRE_MINUTES
@@ -48,9 +49,9 @@ def parse_token(token: str) -> TokenModel:
         username: str = payload.get("sub")
         return TokenModel(username=username)
     except jwt.ExpiredSignatureError as e:
-        raise HTTPException(status_code=401, detail="Signature has expired")
+        raise JWTSignatureExpiredError()
     except jwt.DecodeError as e:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise JWTInvalidTokenError()
 
 
 def auth_wrapper(auth: HTTPAuthorizationCredentials = Security(security)):
