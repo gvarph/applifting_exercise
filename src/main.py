@@ -1,12 +1,11 @@
 from fastapi import FastAPI
 
-from src.background import OfferWorker
+from .background import OfferWorker
 
-from .middleware.exception import ExceptionMiddleware
+from .middleware import ExceptionMiddleware
 
 
-from .endpoints.products import router as products_router
-from .endpoints.auth import router as auth_router
+from .endpoints import products_router, auth_router
 
 
 def start_app() -> FastAPI:
