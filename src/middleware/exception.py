@@ -5,7 +5,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from ..logger import get_logger
 
-from ..errors import CustomException
+from ..exceptions.base import CustomException
 
 logger = get_logger(__name__)
 

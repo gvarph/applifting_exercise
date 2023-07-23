@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-from .errors import EnvironmentVariableNotSet
+from .exceptions.internal import EnvironmentVariableNotSet
 
 load_dotenv(".env")
 

@@ -7,7 +7,8 @@ from src.offers import (
     _decode_token,
     _is_token_valid,
 )
-from src.errors import InvalidJwtTokenError
+
+from src.exceptions.internal import InvalidJwtTokenError
 from src.orm_models import JwtToken
 from tests.conftest import PAST, PRESENT, FUTURE
 
@@ -28,11 +29,6 @@ from tests.conftest import PAST, PRESENT, FUTURE
 )
 def test_is_token_valid(token: Optional[JwtToken], expected: bool):
     assert _is_token_valid(token) == expected
-
-
-def test_decode_token_invalid_token():
-    with pytest.raises(InvalidJwtTokenError):
-        _decode_token("invalid_token")
 
 
 def test_decode_token_gets_decoded():

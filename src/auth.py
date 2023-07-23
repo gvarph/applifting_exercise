@@ -7,7 +7,7 @@ from fastapi.security import (
 import jwt
 from passlib.hash import sha256_crypt
 
-from src.errors import JWTInvalidTokenError, JWTSignatureExpiredError
+from .exceptions.internal import JWTInvalidTokenError, JWTSignatureExpiredError
 
 from .pydantic_models import TokenData
 from .env import JWT_SECRET, ALGORITHM, JWT_TOKEN_EXPIRE_MINUTES

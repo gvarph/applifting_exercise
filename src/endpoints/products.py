@@ -2,7 +2,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, Query
 
-from src.errors import InvalidTimeRangeError
+from src.exceptions.internal import InvalidTimeRangeError
 
 from ..auth import auth_wrapper
 from ..pydantic_models import (

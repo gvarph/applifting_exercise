@@ -3,7 +3,7 @@ from uuid import uuid4
 import pytest
 
 
-from src.errors import ApiRequestError
+from src.exceptions.external import ApiRequestError
 from src.services.product import ProductService
 from src.orm_models import Product
 from src.logger import get_logger

@@ -15,7 +15,11 @@ from ..pydantic_models import (
 )
 from ..offers import fetch_products, register_product
 from ..logger import get_logger
-from ..errors import CustomException, EntityNotFound, ProductRegistrationError
+from ..exceptions.internal import (
+    CustomException,
+    InvalidProductData,
+    EntityNotFound,
+)
 
 logger = get_logger(__name__)
 
@@ -32,7 +36,7 @@ class ProductService:
 
     async def create_product(self, data: CreateProductModel) -> ProductModel:
         if not data.name or not data.description:
-            raise CustomException(message="Invalid product")
+            raise InvalidProductData(detail="Product name and description required")
         with session_scope() as session:
             db_product: Product = Product(name=data.name, description=data.description)
             session.add(db_product)
@@ -40,10 +44,7 @@ class ProductService:
 
             session.refresh(db_product)
 
-            try:
-                await register_product(db_product, session)
-            except Exception:
-                raise ProductRegistrationError(detail="Product registration failed")
+            await register_product(db_product, session)
 
             await fetch_products(db_product, session)
 

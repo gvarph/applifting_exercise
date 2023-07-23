@@ -1,6 +1,6 @@
 from fastapi.routing import APIRouter
 
-from ..errors import InvalidLogin
+from ..exceptions.internal import InvalidLogin
 
 from ..logger import get_logger
 from ..auth import create_token, fake_users_db, validate_password

@@ -9,7 +9,7 @@ from sqlalchemy.orm import declarative_base, relationship, Relationship
 from .env import TEST_ENV
 
 from . import db
-from .errors import EntityNotFound
+from .exceptions.internal import EntityNotFound
 from .logger import get_logger
 
 

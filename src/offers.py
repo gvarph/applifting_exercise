@@ -10,7 +10,7 @@ from jwt.exceptions import InvalidTokenError
 from sqlalchemy.orm.session import Session
 
 
-from .errors import (
+from .exceptions.external import (
     ApiRequestError,
     AuthenticationFailedError,
     InvalidJwtTokenError,
@@ -127,12 +127,9 @@ def _decode_token(token: str):
         )
         return decoded
 
-    except InvalidTokenError as e:
-        logger.error(f"JWT Token decoding failed: {str(e)}")
-        raise InvalidJwtTokenError() from e
     except Exception as e:
         logger.error(f"JWT Token decoding failed: {str(e)}")
-        raise InvalidJwtTokenError() from e
+        raise InvalidJwtTokenError()
 
 
 async def _store_new_token_in_db(
@@ -227,9 +224,7 @@ async def register_product(product: Product, session: Session) -> None:
             ) from err
 
         if not httpx.codes.is_success(response.status_code):
-            logger.error(
-                f"Unsuccessful request, status code: {response.status_code}\n Error: {response.text}"
-            )
+            logger.error(f"Unsuccessful request, status code: {response.status_code}")
 
             raise ProductRegistrationError(
                 f"Unsuccessful product offer registration, status code: {response.status_code}"
