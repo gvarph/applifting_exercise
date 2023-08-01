@@ -127,6 +127,6 @@ I cannot find where I opened a DB connection as a singleton. The only DB-related
 
 I have implemented different kinds of thests in order to show off I know how to work with them, but I agree they could have been structured better
 
-> Other
+> Other minor cons
 
-I with the other complaints
+I agree with the other complaints
