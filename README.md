@@ -125,7 +125,7 @@ I cannot find where I opened a DB connection as a singleton. The only DB-related
 
 > tests look like a mix of unit, integration and end-to-end and would generally need some tuning
 
-I have implemented different kinds of thests in order to show off I know how to work with them, but I agree they could have been structured better
+I have implemented different kinds of tests in order to show off I know how to work with them, but I agree they could have been structured better
 
 > Other minor cons
 
