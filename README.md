@@ -115,8 +115,18 @@ src/util.py 15 15 0 0 0%
 ---
 
 TOTAL 557 273 116 4 45%
-
-```
-
-```
 ````
+
+## Adressing some of the minor cons
+
+> database connection opened as a singleton and then used in code when needed
+
+I cannot find where I opened a DB connection as a singleton. The only DB-related sigleton is the `sessionmaker` which is a factory that creates new sessions. Every other session lasts only for one task/request (both for handling incoming requests using fastapi and for the background task).
+
+> tests look like a mix of unit, integration and end-to-end and would generally need some tuning
+
+I have implemented different kinds of thests in order to show off I know how to work with them, but I agree they could have been structured better
+
+> Other
+
+I with the other complaints
